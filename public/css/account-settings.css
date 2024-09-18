@@ -60,7 +60,7 @@ header {
 /* Container and Side Menu Styles */
 .container {
     display: flex;
-    height: calc(100vh - 60px); /* Full height minus header */
+    height: calc(100vh - 60px); 
 }
 
 .side-menu {
@@ -70,7 +70,7 @@ header {
     z-index: 1;
     position: fixed;
     height: 100%;
-    top: 60px; 
+    top: 60px;
 }
 
 .side-menu ul {
@@ -99,11 +99,11 @@ header {
 .content {
     flex: 1;
     padding: 30px;
-    margin-left: 200px; /* Creates space for the side menu */
+    margin-left: 200px; 
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     background-color: #fff;
-    overflow-y: auto; /* Allows scrolling if content overflows */
+    overflow-y: auto; 
 }
 
 .page-header {
@@ -228,13 +228,5 @@ select:focus {
     .content {
         margin-left: 0;
         padding-top: 20px;
-    }
-    .side-menu .menu-btn {
-        display: block;
-        background-color: #3498db;
-        color: white;
-        padding: 10px;
-        text-align: center;
-        cursor: pointer;
     }
 }
