@@ -1,0 +1,240 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Style the header */
+header {
+    background-color: white;
+    color: #333;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    height: 60px;
+}
+
+.left-header {
+    flex: 1;
+    text-align: left;
+}
+
+.right-header {
+    flex: 1;
+    text-align: right;
+}
+
+.header-menu ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.header-menu ul li {
+    margin-left: 20px;
+}
+
+.header-menu ul li a {
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 10px 15px;
+    border-radius: 4px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.header-menu ul li a:hover,
+.header-menu ul li a:focus {
+    background-color: #ddd;
+    color: #000;
+    outline: none;
+}
+
+/* Container and Side Menu Styles */
+.container {
+    display: flex;
+    height: calc(100vh - 60px); /* Full height minus header */
+}
+
+.side-menu {
+    width: 200px;
+    background-color: #fff;
+    padding-top: 10px;
+    z-index: 1;
+    position: fixed;
+    height: 100%;
+    top: 60px; 
+}
+
+.side-menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.side-menu ul li {
+    padding: 10px 20px;
+    text-align: left;
+}
+
+.side-menu ul li a {
+    color: black;
+    text-decoration: none;
+    display: block;
+    transition: background-color 0.3s;
+}
+
+.side-menu ul li a:hover {
+    background-color: #e8e3e3;
+}
+
+/* Content Styles */
+.content {
+    flex: 1;
+    padding: 30px;
+    margin-left: 200px; /* Creates space for the side menu */
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    overflow-y: auto; /* Allows scrolling if content overflows */
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 0;
+}
+
+.welcome-section {
+    text-align: right;
+}
+
+.welcome-section h2 {
+    font-size: 20px;
+    color: #555;
+}
+
+.section {
+    margin-bottom: 30px;
+}
+
+.section h2 {
+    font-size: 20px;
+    color: #555;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.setting {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.setting label {
+    font-weight: bold;
+    display: inline-block;
+    width: 200px;
+}
+
+.setting input[type="text"],
+.setting input[type="password"],
+.setting input[type="date"],
+.setting input[type="number"],
+.setting select {
+    flex: 1;
+    max-width: 300px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.setting button {
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.setting button:hover {
+    background-color: #2980b9;
+}
+
+.logout {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.logout button {
+    padding: 10px 20px;
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.logout button:hover {
+    background-color: #c0392b;
+}
+
+button:focus,
+input:focus,
+select:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+/* Responsive styles for mobile */
+@media screen and (max-width: 768px) {
+    .side-menu {
+        width: 100%;
+        height: auto;
+        position: relative;
+        top: 0;
+    }
+    .container {
+        flex-direction: column;
+    }
+    .content {
+        margin-left: 0;
+        padding-top: 20px;
+    }
+    .side-menu .menu-btn {
+        display: block;
+        background-color: #3498db;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+    }
+}

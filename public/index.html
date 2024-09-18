@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutri-Health</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header>
+    <div class="left-header">
+      <h2>&copy; Nutri-Health.</h2>
+    </div>
+    <div class="right-header"></div>
+      <nav class="header-menu">
+        <ul>
+          <li><a href='account-settings.html'>Account Settings</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>  
+
+  <main class="main-content">
+    <!-- Chat History Section -->
+    <div class="chat-history">
+      <h3>Chat History</h3>
+      <ul id="history-list">
+        <!-- History will appear here -->
+      </ul>
+    </div>
+
+    <!-- Chat Section -->
+    <div class="chat-container">
+      <div class="chat-header">
+        <h2><span id="chat-topic">Active Chat</span></h2>
+      </div>
+
+      <div class="chat-messages" id="messages">
+        <!-- Messages will appear here -->
+      </div>
+
+      <form class="chat-form" id="chat-form">
+        <input type="text" id="message-input" placeholder="Type a message..." required>
+
+        <!-- File Upload Button -->
+        <input type="file" id="file-input" hidden>
+        <button type="button" id="upload-btn" title="Upload file">📎</button>
+
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </main>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
