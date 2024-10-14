@@ -28,11 +28,83 @@ window.onclick = function (event) {
     }
 };
 
+// Email validation function
+function isValidEmail(email) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic regex for email validation
+    return emailPattern.test(email);
+}
+
+// Password strength validation function
+function isStrongPassword(password) {
+    const minLength = 8; // Minimum length of 8 characters
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    
+    return (
+        password.length >= minLength &&
+        hasUpperCase &&
+        hasLowerCase &&
+        hasNumbers &&
+        hasSpecialChars
+    );
+}
+
+// Function to update the UI for email validation feedback
+function updateEmailValidationUI() {
+    const email = usernameInput.value;
+    const feedbackElement = document.getElementById('email-feedback');
+    
+    if (isValidEmail(email)) {
+        feedbackElement.textContent = 'Valid email address.';
+        feedbackElement.style.color = 'green';
+    } else {
+        feedbackElement.textContent = 'Please enter a valid email address.';
+        feedbackElement.style.color = 'red';
+    }
+}
+
+// Function to update the UI for password validation feedback
+function updatePasswordValidationUI() {
+    const password = passwordInput.value;
+    const feedbackElement = document.getElementById('password-feedback');
+    
+    if (isStrongPassword(password)) {
+        feedbackElement.textContent = 'Strong password.';
+        feedbackElement.style.color = 'green';
+    } else {
+        feedbackElement.textContent = 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.';
+        feedbackElement.style.color = 'red';
+    }
+}
+
+// Function to update the UI for confirm password validation feedback
+function updateConfirmPasswordValidationUI() {
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+    const feedbackElement = document.getElementById('confirm-password-feedback');
+    
+    if (confirmPassword === password) {
+        feedbackElement.textContent = 'Passwords match.';
+        feedbackElement.style.color = 'green';
+    } else {
+        feedbackElement.textContent = 'Passwords do not match.';
+        feedbackElement.style.color = 'red';
+    }
+}
+
 // Handle Auth Form Submission
 authForm.onsubmit = async function (event) {
     event.preventDefault();
     const username = usernameInput.value;
     const password = passwordInput.value;
+
+    // Validate email format
+    if (!isValidEmail(username)) {
+        alert('Please enter a valid email address.');
+        return; // Prevent submission if email is not valid
+    }
 
     // Login Logic
     if (confirmPasswordGroup.style.display === 'none') {
@@ -47,22 +119,22 @@ authForm.onsubmit = async function (event) {
                 });
 
                 if (response.ok) {
-                    console.log('Login successful');
-                    authModal.style.display = 'none'; // Close modal on successful login
-                    fetchPersonalDetails(username); // Fetch personal details after login
-                } else {
-                    alert('Invalid email or password');
+                    authModal.style.display = 'none'; 
+                    fetchPersonalDetails(username); 
                 }
             } catch (error) {
                 console.error('Error during login:', error);
             }
-        } else {
-            alert('Please enter both username and password.');
         }
     } else {
         // Registration Logic
         const confirmPassword = confirmPasswordInput.value;
         if (password === confirmPassword) {
+            if (!isStrongPassword(password)) {
+                alert('Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.');
+                return; 
+            }
+
             try {
                 const response = await fetch('/register/', {
                     method: 'POST',
@@ -73,23 +145,28 @@ authForm.onsubmit = async function (event) {
                 });
 
                 if (response.ok) {
-                    console.log('Registration successful');
+                    // Show success alert
+                    alert('User registration successful! Please log in.');
+
                     // Switch back to login view
                     confirmPasswordGroup.style.display = 'none';
                     document.getElementById('modal-title').textContent = 'Login';
                     registerButton.textContent = 'Register';
-                    alert('Registration successful! You can now log in.');
-                } else {
-                    alert('Error during registration');
+                    location.reload();
                 }
             } catch (error) {
                 console.error('Error during registration:', error);
             }
-        } else {
-            alert('Passwords do not match.');
+        }   else {
+            alert('Passwords do not match. Please try again.');
         }
     }
 };
+
+// Event listeners for real-time validation
+usernameInput.addEventListener('input', updateEmailValidationUI);
+passwordInput.addEventListener('input', updatePasswordValidationUI);
+confirmPasswordInput.addEventListener('input', updateConfirmPasswordValidationUI);
 
 // Handle Registration Button
 registerButton.onclick = function () {
@@ -103,6 +180,7 @@ registerButton.onclick = function () {
         confirmPasswordGroup.style.display = 'none';
         document.getElementById('modal-title').textContent = 'Login';
         registerButton.textContent = 'Register';
+        
     }
 };
 
@@ -138,12 +216,7 @@ async function fetchPersonalDetails(email) {
         
         if (response.ok) {
             const personalDetails = await response.json();
-            console.log('Personal details:', personalDetails);
-
             // You can display the personal details in the UI as needed
-            alert(`Welcome, ${personalDetails.name}!`);
-        } else {
-            console.log('Failed to fetch personal details');
         }
     } catch (error) {
         console.error('Error fetching personal details:', error);
