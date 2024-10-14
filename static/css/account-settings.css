@@ -60,8 +60,8 @@ header {
 /* Content Styles */
 .content {
     flex: 1;
-    padding: 30px;
-    border-radius: 10px;
+    padding: 60px;
+    border-radius: 20px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     background-color: #fff;
     overflow-y: auto;
@@ -90,7 +90,7 @@ header {
 }
 
 .section {
-    margin-bottom: 30px;
+    padding: 20px;
 }
 
 .section h2 {
@@ -123,6 +123,11 @@ header {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
+}
+
+.button-container {
+    display: flex;
+    gap: 10px; /* Adjust space between buttons as needed */
 }
 
 .setting button {

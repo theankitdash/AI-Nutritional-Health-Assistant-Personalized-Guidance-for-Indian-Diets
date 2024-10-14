@@ -25,7 +25,7 @@
             <header>
                 <h1>Account Settings</h1>
                 <div class="welcome-section">
-                    <h2>Welcome, <span id="name"></span></h2>
+                    <h2>Welcome, <span id="welcome-name"></span></h2>
                 </div>
             </header>
 
@@ -55,35 +55,33 @@
                     <label for="weight">Weight:</label>
                     <input type="number" id="weight" name="weight" placeholder="Enter your Weight">  
                 </div>
-                <div class="setting">
+                <div class="setting button-container">
                     <button id="saveProfileBtn" type="button">Save Profile</button>
+                    <button id="changePasswordBtn" type="button">Change Password</button>
                 </div>
-            </div>
-            <div class="setting">
-                <button id="changePasswordBtn" type="button">Change Password</button>
-            </div>
 
-            <!-- Password Change Modal -->
-            <div id="changePasswordModal" class="modal">
-                <div class="modal-content">
-                    <span class="close" id="closeModal">&times;</span>
-                    <h2>Change Password</h2>
-                    <div class="setting">
-                        <label for="currentPassword">Current Password:</label>
-                        <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter your current password">
-                    </div>
-                    <div class="setting">
-                        <label for="newPassword">New Password:</label>
-                        <input type="password" id="newPassword" name="newPassword" placeholder="Enter your new password">
-                    </div>
-                    <div class="setting">
-                        <button id="submitChangePasswordBtn" type="button">Submit</button>
+                <!-- Password Change Modal -->
+                <div id="changePasswordModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close" id="closeModal">&times;</span>
+                        <h2>Change Password</h2>
+                        <div class="setting">
+                            <label for="currentPassword">Current Password:</label>
+                            <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter your current password">
+                        </div>
+                        <div class="setting">
+                            <label for="newPassword">New Password:</label>
+                            <input type="password" id="newPassword" name="newPassword" placeholder="Enter your new password">
+                        </div>
+                        <div class="setting">
+                            <button id="submitChangePasswordBtn" type="button">Submit</button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="logout" id="logout">
-                <button id="logoutBtn" type="button">Logout</button>
+                <div class="logout" id="logout">
+                    <button id="logoutBtn" type="button">Logout</button>
+                </div>
             </div>
         </div>
     </div>
