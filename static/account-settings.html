@@ -21,18 +21,11 @@
     </header>
 
     <div class="container">
-        <div id="sideMenu" class="side-menu">
-            <ul class="menu-items" id="menuItems">
-                <li><a href="#" data-target="profile">Profile Settings</a></li>
-                <li><a href="#" data-target="security">Security Settings</a></li>
-            </ul>
-        </div>
-
         <div class="content">
             <header>
                 <h1>Account Settings</h1>
                 <div class="welcome-section">
-                    <h2>Welcome, <span id="phoneNumber"></span></h2>
+                    <h2>Welcome, <span id="name"></span></h2>
                 </div>
             </header>
 
@@ -43,8 +36,8 @@
                     <input type="text" id="name" name="name" placeholder="Enter your full name">
                 </div>
                 <div class="setting">
-                    <label for="age">Age:</label>
-                    <input type="number" id="age" name="age" placeholder="Enter your Age">  
+                    <label for="dateOfBirth">Date of Birth:</label>
+                    <input type="date" id="dateOfBirth" name="dateOfBirth">
                 </div>
                 <div class="setting">
                     <label for="gender">Gender:</label>
@@ -63,22 +56,29 @@
                     <input type="number" id="weight" name="weight" placeholder="Enter your Weight">  
                 </div>
                 <div class="setting">
-                    <label for="dateOfBirth">Date of Birth:</label>
-                    <input type="date" id="dateOfBirth" name="dateOfBirth">
-                </div>
-                <div class="setting">
                     <button id="saveProfileBtn" type="button">Save Profile</button>
                 </div>
             </div>
+            <div class="setting">
+                <button id="changePasswordBtn" type="button">Change Password</button>
+            </div>
 
-            <div class="section" id="security">
-                <h2>Security Settings</h2>
-                <div class="setting">
-                    <label for="newPassword">New Password:</label>
-                    <input type="password" id="newPassword" name="newPassword" placeholder="Enter your new password">
-                </div>
-                <div class="setting">
-                    <button id="changePasswordBtn" type="button">Change Password</button>
+            <!-- Password Change Modal -->
+            <div id="changePasswordModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" id="closeModal">&times;</span>
+                    <h2>Change Password</h2>
+                    <div class="setting">
+                        <label for="currentPassword">Current Password:</label>
+                        <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter your current password">
+                    </div>
+                    <div class="setting">
+                        <label for="newPassword">New Password:</label>
+                        <input type="password" id="newPassword" name="newPassword" placeholder="Enter your new password">
+                    </div>
+                    <div class="setting">
+                        <button id="submitChangePasswordBtn" type="button">Submit</button>
+                    </div>
                 </div>
             </div>
 

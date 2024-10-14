@@ -57,53 +57,14 @@ header {
     outline: none;
 }
 
-/* Container and Side Menu Styles */
-.container {
-    display: flex;
-    height: calc(100vh - 60px); 
-}
-
-.side-menu {
-    width: 200px;
-    background-color: #fff;
-    padding-top: 10px;
-    z-index: 1;
-    position: fixed;
-    height: 100%;
-    top: 60px;
-}
-
-.side-menu ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-}
-
-.side-menu ul li {
-    padding: 10px 20px;
-    text-align: left;
-}
-
-.side-menu ul li a {
-    color: black;
-    text-decoration: none;
-    display: block;
-    transition: background-color 0.3s;
-}
-
-.side-menu ul li a:hover {
-    background-color: #e8e3e3;
-}
-
 /* Content Styles */
 .content {
     flex: 1;
     padding: 30px;
-    margin-left: 200px; 
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     background-color: #fff;
-    overflow-y: auto; 
+    overflow-y: auto;
 }
 
 .page-header {
@@ -206,27 +167,61 @@ select:focus {
     outline-offset: 2px;
 }
 
-.section {
-    display: none;
+/* Modal Styles for Password Change */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
 }
 
-.section.active {
-    display: block;
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 300px; /* Could be more or less, depending on screen size */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header,
+.modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header {
+    margin-bottom: 15px;
+}
+
+.modal-header h2 {
+    margin: 0;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
 }
 
 /* Responsive styles for mobile */
 @media screen and (max-width: 768px) {
-    .side-menu {
-        width: 100%;
-        height: auto;
-        position: relative;
-        top: 0;
-    }
-    .container {
-        flex-direction: column;
-    }
     .content {
-        margin-left: 0;
         padding-top: 20px;
     }
 }

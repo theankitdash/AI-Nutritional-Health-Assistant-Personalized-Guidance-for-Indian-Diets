@@ -10,6 +10,7 @@ const messagesContainer = document.getElementById('messages');
 const messageInput = document.getElementById('message-input');
 const chatForm = document.getElementById('chat-form');
 const confirmPasswordGroup = document.getElementById('confirm-password-group');
+const logoutButton = document.getElementById('logout-btn');
 
 // Show the modal on page load
 window.onload = function () {
@@ -119,8 +120,19 @@ authForm.onsubmit = async function (event) {
                 });
 
                 if (response.ok) {
+                    // Show success alert
+                    alert('Login Successful!.');
+                    const data = await response.json();
+                    const token = data.access_token;
+
+                    // Store JWT token in localStorage
+                    localStorage.setItem('jwt', token);
+
                     authModal.style.display = 'none'; 
                     fetchPersonalDetails(username); 
+                } else {
+                    const errorData = await response.json();
+                    alert(`Error: ${errorData.detail || response.statusText}`);
                 }
             } catch (error) {
                 console.error('Error during login:', error);
@@ -134,7 +146,6 @@ authForm.onsubmit = async function (event) {
                 alert('Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.');
                 return; 
             }
-
             try {
                 const response = await fetch('/register/', {
                     method: 'POST',
@@ -212,13 +223,49 @@ function appendMessage(sender, text) {
 // Fetch Personal Details after Login
 async function fetchPersonalDetails(email) {
     try {
-        const response = await fetch(`/personal-details/${email}`);
+        const response = await fetch(`/personal-details/`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            }
+        });
         
         if (response.ok) {
             const personalDetails = await response.json();
+            console.log('Personal Details:', personalDetails);
             // You can display the personal details in the UI as needed
+        } else {
+            console.error('Error fetching personal details:', response.statusText);
         }
     } catch (error) {
         console.error('Error fetching personal details:', error);
     }
 }
+
+// Logout logic
+
+
+logoutButton.onclick = async function () {
+    // Remove JWT from localStorage
+    localStorage.removeItem('jwt');
+
+    // Optionally, you can notify the backend about logout
+    try {
+        const response = await fetch('/logout/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (response.ok) {
+            alert('Logout successful.');
+            location.reload();
+        } else {
+            const errorData = await response.json();
+            alert(`Error: ${errorData.detail || response.statusText}`);
+        }
+    } catch (error) {
+        console.error('Error during logout:', error);
+    }
+};
