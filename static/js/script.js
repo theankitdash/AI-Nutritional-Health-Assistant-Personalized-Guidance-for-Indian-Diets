@@ -14,7 +14,12 @@ const logoutButton = document.getElementById('logout-btn');
 
 // Show the modal on page load
 window.onload = function () {
-    authModal.style.display = 'block';
+    const token = localStorage.getItem('jwt');
+    if (!token) {
+        authModal.style.display = 'block';
+    } else {
+        fetchPersonalDetails(); // Fetch user details if already logged in
+    }
 };
 
 // Close modal when user clicks on <span> (x)
@@ -221,7 +226,13 @@ function appendMessage(sender, text) {
 }
 
 // Fetch Personal Details after Login
-async function fetchPersonalDetails(email) {
+async function fetchPersonalDetails() {
+    const token = localStorage.getItem('jwt');
+    if (!token) {
+        console.error('User not logged in. Token missing.');
+        return;
+    }
+    
     try {
         const response = await fetch(`/personal-details/`, {
             method: 'GET',

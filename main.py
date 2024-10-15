@@ -1,14 +1,10 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, EmailStr
 import os
-from datetime import date, datetime, timedelta, timezone
-import mysql.connector
-from mysql.connector import Error
+import aioredis
 import bcrypt
-import jwt
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -16,26 +12,20 @@ app = FastAPI()
 # Mount the static directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# MySQL Database Connection Details
-MYSQL_CONFIG = {
+# Redis Database Connection
+REDIS_CONFIG = {
     "host": "localhost",
-    "user": "root",
-    "password": "Chiku@4009",
-    "database": "nutrify-health"
+    "port": 6379,
+    "db": 0,
 }
 
-# JWT Secret and Algorithm
-SECRET_KEY = "your_secret_key"  # Keep this secret!
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# OAuth2 scheme for receiving tokens
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+# Initialize Redis connection
+redis_client = None
 
 # Pydantic models for personal details and user credentials
 class PersonalDetails(BaseModel):
     name: str
-    date_of_birth: date
+    date_of_birth: str  # Change this to str for easier handling with Redis
     gender: str
     height: float
     weight: float
@@ -48,66 +38,14 @@ class PasswordUpdate(BaseModel):
     current_password: str
     new_password: str
 
+@app.on_event("startup")
+async def startup():
+    global redis_client
+    redis_client = await aioredis.from_url(f"redis://{REDIS_CONFIG['host']}:{REDIS_CONFIG['port']}/{REDIS_CONFIG['db']}")
 
-# Function to create JWT access token
-def create_access_token(data: dict, expires_delta: timedelta = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-# Function to create MySQL tables if they don't exist
-async def create_tables():
-    try:
-        connection = mysql.connector.connect(**MYSQL_CONFIG)
-        cursor = connection.cursor()
-        # Create credentials table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS user_credentials (
-                email VARCHAR(100) PRIMARY KEY,
-                password VARCHAR(255) NOT NULL
-            )
-        """)
-        # Create personal details table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS personal_details (
-                email VARCHAR(100) PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                date_of_birth DATE NOT NULL,
-                gender VARCHAR(10) NOT NULL,
-                height FLOAT NOT NULL,
-                weight FLOAT NOT NULL,
-                FOREIGN KEY (email) REFERENCES user_credentials(email)
-                ON DELETE CASCADE
-            )
-        """)
-        connection.commit()
-        print("Tables 'user_credentials' and 'personal_details' created successfully.")
-    except Error as e:
-        print(f"Error creating tables: {e}")
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
-
-# Function to get the current user by verifying the JWT token
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-        if email is None:
-            raise credentials_exception
-    except jwt.InvalidTokenError:
-        raise credentials_exception
-    return email
+@app.on_event("shutdown")
+async def shutdown():
+    await redis_client.close()
 
 # Endpoint to serve the HTML page at the root URL
 @app.get("/", response_class=HTMLResponse)
@@ -126,137 +64,80 @@ async def read_account_settings():
 async def register_user(credentials: UserCredentials):
     hashed_password = bcrypt.hashpw(credentials.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-    connection = mysql.connector.connect(**MYSQL_CONFIG)
-    try:
-        cursor = connection.cursor()
-        cursor.execute("""
-            INSERT INTO user_credentials (email, password)
-            VALUES (%s, %s)
-        """, (credentials.email, hashed_password))
-        connection.commit()
-        return {"message": "User registered successfully."}
-    except Error as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    finally:
-        cursor.close()
-        connection.close()
+    # Store hashed password in Redis
+    await redis_client.hset(f"user:{credentials.email}", mapping={
+        "password": hashed_password
+    })
+    return {"message": "User registered successfully."}
 
-# Endpoint to login and generate a JWT token
+# Endpoint to login and store user details in Redis
 @app.post("/login/")
 async def login_user(credentials: UserCredentials):
-    connection = mysql.connector.connect(**MYSQL_CONFIG)
-    try:
-        cursor = connection.cursor()
-        cursor.execute("SELECT password FROM user_credentials WHERE email = %s", (credentials.email,))
-        result = cursor.fetchone()
+    user_data = await redis_client.hgetall(f"user:{credentials.email}")
 
-        if result and bcrypt.checkpw(credentials.password.encode('utf-8'), result[0].encode('utf-8')):
-            # Create JWT
-            access_token = create_access_token(data={"sub": credentials.email})
-            return {"access_token": access_token, "token_type": "bearer"}
-        else:
-            raise HTTPException(status_code=401, detail="Invalid email or password.")
-    except Error as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    finally:
-        cursor.close()
-        connection.close()
+    if user_data and bcrypt.checkpw(credentials.password.encode('utf-8'), user_data[b'password']):
+        # Store user session in Redis (optional, you can enhance this part)
+        await redis_client.set(f"session:{credentials.email}", "active")
+        return {"message": "User logged in successfully."}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
 
-# Endpoint to add personal details (requires logged-in session with JWT)
+# Endpoint to add personal details (requires logged-in session)
 @app.post("/personal-details/")
-async def add_personal_details(details: PersonalDetails, current_user: str = Depends(get_current_user)):
-    connection = mysql.connector.connect(**MYSQL_CONFIG)
-    try:
-        cursor = connection.cursor()
-        cursor.execute("""
-            INSERT INTO personal_details (email, name, date_of_birth, gender, height, weight)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (current_user, details.name, details.date_of_birth, details.gender, details.height, details.weight))
-        connection.commit()
-        return {"message": "Personal details added successfully."}
-    except Error as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    finally:
-        cursor.close()
-        connection.close()
+async def add_personal_details(details: PersonalDetails, email: str):
+    # Store personal details in Redis
+    await redis_client.hmset(f"personal_details:{email}", mapping={
+        "name": details.name,
+        "date_of_birth": details.date_of_birth,
+        "gender": details.gender,
+        "height": details.height,
+        "weight": details.weight,
+    })
+    return {"message": "Personal details added successfully."}
 
-# Endpoint to fetch personal details by JWT token (requires logged-in session)
-@app.get("/personal-details/")
-async def get_personal_details(current_user: str = Depends(get_current_user)):
-    connection = mysql.connector.connect(**MYSQL_CONFIG)
-    try:
-        cursor = connection.cursor()
-        cursor.execute("SELECT * FROM personal_details WHERE email = %s", (current_user,))
-        result = cursor.fetchone()
-        if result:
-            return {
-                "email": result[0],
-                "name": result[1],
-                "date_of_birth": result[2],
-                "gender": result[3],
-                "height": result[4],
-                "weight": result[5],
-            }
-        else:
-            raise HTTPException(status_code=404, detail="User not found.")
-    except Error as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    finally:
-        cursor.close()
-        connection.close()
+# Endpoint to fetch personal details
+@app.get("/personal-details/{email}")
+async def get_personal_details(email: str):
+    result = await redis_client.hgetall(f"personal_details:{email}")
+    if result:
+        return {
+            "email": email,
+            "name": result[b'name'].decode('utf-8'),
+            "date_of_birth": result[b'date_of_birth'].decode('utf-8'),
+            "gender": result[b'gender'].decode('utf-8'),
+            "height": float(result[b'height']),
+            "weight": float(result[b'weight']),
+        }
+    else:
+        raise HTTPException(status_code=404, detail="User not found.")
 
-# Endpoint to update personal details (requires logged-in session with JWT)
-@app.put("/personal-details/")
-async def update_personal_details(details: PersonalDetails, current_user: str = Depends(get_current_user)):
-    connection = mysql.connector.connect(**MYSQL_CONFIG)
-    try:
-        cursor = connection.cursor()
-        cursor.execute("""
-            UPDATE personal_details
-            SET name = %s, date_of_birth = %s, gender = %s, height = %s, weight = %s
-            WHERE email = %s
-        """, (details.name, details.date_of_birth, details.gender, details.height, details.weight, current_user))
-        connection.commit()
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="User not found.")
-        return {"message": "Personal details updated successfully."}
-    except Error as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    finally:
-        cursor.close()
-        connection.close()
+# Endpoint to update personal details
+@app.put("/personal-details/{email}")
+async def update_personal_details(email: str, details: PersonalDetails):
+    await redis_client.hmset(f"personal_details:{email}", mapping={
+        "name": details.name,
+        "date_of_birth": details.date_of_birth,
+        "gender": details.gender,
+        "height": details.height,
+        "weight": details.weight,
+    })
+    return {"message": "Personal details updated successfully."}
 
 @app.put("/update-password/")
-async def update_password(password_data: PasswordUpdate, current_user: str = Depends(get_current_user)):
-    connection = mysql.connector.connect(**MYSQL_CONFIG)
-    try:
-        cursor = connection.cursor()
-        cursor.execute("SELECT password FROM user_credentials WHERE email = %s", (current_user,))
-        result = cursor.fetchone()
+async def update_password(password_data: PasswordUpdate, email: str):
+    user_data = await redis_client.hgetall(f"user:{email}")
 
-        if result and bcrypt.checkpw(password_data.current_password.encode('utf-8'), result[0].encode('utf-8')):
-            hashed_new_password = bcrypt.hashpw(password_data.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            cursor.execute("""
-                UPDATE user_credentials
-                SET password = %s
-                WHERE email = %s
-            """, (hashed_new_password, current_user))
-            connection.commit()
-            if cursor.rowcount == 0:
-                raise HTTPException(status_code=404, detail="User not found.")
-            return {"message": "Password updated successfully."}
-        else:
-            raise HTTPException(status_code=401, detail="Current password is incorrect.")
-    except Error as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    finally:
-        cursor.close()
-        connection.close()
-
+    if user_data and bcrypt.checkpw(password_data.current_password.encode('utf-8'), user_data[b'password']):
+        hashed_new_password = bcrypt.hashpw(password_data.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        await redis_client.hset(f"user:{email}", "password", hashed_new_password)
+        return {"message": "Password updated successfully."}
+    else:
+        raise HTTPException(status_code=401, detail="Current password is incorrect.")
 
 @app.post("/logout/")
-async def logout_user():
-    # Frontend should handle token removal on the client-side
-    return {"message": "Logged out successfully."}
+async def logout_user(email: str):
+    # Invalidate the user session (optional)
+    await redis_client.delete(f"session:{email}")
+    return {"message": "User logged out successfully."}
 
-#uvicorn main:app --reload
+# Run the application using: uvicorn main:app --reload

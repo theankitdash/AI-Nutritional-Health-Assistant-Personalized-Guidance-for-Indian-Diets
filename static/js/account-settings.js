@@ -40,8 +40,7 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
             date_of_birth: document.getElementById("dateOfBirth").value,
             gender: document.getElementById("gender").value,
             height: parseFloat(document.getElementById("height").value),
-            weight: parseFloat(document.getElementById("weight").value)
-            
+            weight: parseFloat(document.getElementById("weight").value) 
         };
 
         try {
