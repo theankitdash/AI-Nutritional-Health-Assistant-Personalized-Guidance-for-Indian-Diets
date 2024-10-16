@@ -13,12 +13,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const logoutButton = document.getElementById('logout-btn');
 
     // Show the modal on page load
-    window.onload = function () {
-        const sessionId = getCookie('session_id');
-        if (!sessionId) {
-            authModal.style.display = 'block';
-        } else {
-            fetchPersonalDetails(); // Fetch user details if already logged in
+    window.onload = async function () {
+        const isLoggedIn = await fetchPersonalDetails(); // Fetch user details and check login status
+        if (!isLoggedIn) {
+            authModal.style.display = 'block'; // Show modal only if not logged in
         }
     };
 
@@ -33,13 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             authModal.style.display = 'none';
         }
     };
-
-    // Get cookie by name
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-    }
 
     // Email validation function
     function isValidEmail(email) {
@@ -133,7 +124,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                     if (response.ok) {
                         // Show success alert
-                        alert('Login Successful!.');
+                        alert('Login Successful!'); 
                         authModal.style.display = 'none'; 
                         fetchPersonalDetails(); // Fetch personal details after login
                     } else {
@@ -163,13 +154,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                     if (response.ok) {
                         // Show success alert
-                        alert('User registration successful! Please log in.');
-
-                        // Switch back to login view
-                        confirmPasswordGroup.style.display = 'none';
-                        document.getElementById('modal-title').textContent = 'Login';
-                        registerButton.textContent = 'Register';
-                        location.reload();
+                        alert('User registration successful! Please add personal details.');
+                        window.location.href = '/account-settings';
                     }
                 } catch (error) {
                     console.error('Error during registration:', error);
@@ -192,11 +178,70 @@ document.addEventListener("DOMContentLoaded", async () => {
             confirmPasswordGroup.style.display = 'block';
             document.getElementById('modal-title').textContent = 'Register';
             registerButton.textContent = 'Back to Login';
+
+            // Clear fields and validation messages
+            usernameInput.value = '';
+            passwordInput.value = '';
+            confirmPasswordInput.value = '';
+            updateEmailValidationUI();
+            updatePasswordValidationUI();
+            updateConfirmPasswordValidationUI();
         } else {
             // Switch back to login
             confirmPasswordGroup.style.display = 'none';
             document.getElementById('modal-title').textContent = 'Login';
             registerButton.textContent = 'Register';
+
+            // Clear fields and validation messages
+            usernameInput.value = '';
+            passwordInput.value = '';
+            confirmPasswordInput.value = '';
+            updateEmailValidationUI();
+            updatePasswordValidationUI();
+            updateConfirmPasswordValidationUI();
+        }
+    };
+
+    // Fetch Personal Details after Login
+    async function fetchPersonalDetails() {
+        
+        try {
+            const response = await fetch(`/personal-details/`, {
+                method: 'GET',
+                credentials: 'include', // Include cookies with the request
+            });
+            
+            if (response.ok) {
+                const personalDetails = await response.json();
+                document.getElementById("welcome-name").textContent = personalDetails.name;
+                return true;
+
+            } else {
+                alert('Error fetching personal details:', response.statusText);
+                return false;
+            }
+        } catch (error) {
+            alert('Error during fetch personal details:', error);
+            return false;
+        }
+    }
+
+    // Handle Logout
+    logoutButton.onclick = async function () {
+        try {
+            const response = await fetch('/logout/', {
+                method: 'POST',
+                credentials: 'include', // Include cookies with the request
+            });
+
+            if (response.ok) {
+                alert('Logout successful.');
+                window.location.reload();
+            } else {
+                console.error('Error during logout:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error during logout:', error);
         }
     };
 
@@ -224,54 +269,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         messagesContainer.appendChild(messageElement);
         messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to the bottom
     }
-
-    // Fetch Personal Details after Login
-    async function fetchPersonalDetails() {
-        const sessionId = getCookie('session_id');
-        if (!sessionId) {
-            console.error('User not logged in. Session ID missing.');
-            return;
-        }
-        
-        try {
-            const response = await fetch(`/personal-details/`, {
-                method: 'GET',
-                credentials: 'include', // Include cookies with the request
-            });
-            
-            if (response.ok) {
-                const personalDetails = await response.json();
-                console.log('Personal Details:', personalDetails);
-                // You can display the personal details in the UI as needed
-            } else {
-                console.error('Error fetching personal details:', response.statusText);
-            }
-        } catch (error) {
-            console.error('Error fetching personal details:', error);
-        }
-    }
-
-    // Logout logic
-    logoutButton.onclick = async function () {
-        const sessionId = getCookie('session_id');
-
-        // Remove session from the backend
-        try {
-            const response = await fetch('/logout/', {
-                method: 'POST',
-                credentials: 'include', // Include cookies with the request
-            });
-
-            if (response.ok) {
-                alert('Logout successful.');
-                location.reload();
-            } else {
-                const errorData = await response.json();
-                alert(`Error: ${errorData.detail || response.statusText}`);
-            }
-        } catch (error) {
-            console.error('Error during logout:', error);
-        }
-    }
 });
-

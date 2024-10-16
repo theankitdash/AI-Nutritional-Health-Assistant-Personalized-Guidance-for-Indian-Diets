@@ -1,10 +1,10 @@
+import uuid
 from fastapi import FastAPI, HTTPException, Cookie
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 import aioredis
 import bcrypt
-from itsdangerous import URLSafeTimedSerializer
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -21,7 +21,6 @@ REDIS_CONFIG = {
 
 # Initialize Redis connection
 redis_client = None
-serializer = URLSafeTimedSerializer("your_secret_key")  # Replace with your secret key
 
 # Pydantic models for personal details and user credentials
 class PersonalDetails(BaseModel):
@@ -77,7 +76,8 @@ async def login_user(credentials: UserCredentials):
     user_data = await redis_client.hgetall(f"user:{credentials.email}")
 
     if user_data and bcrypt.checkpw(credentials.password.encode('utf-8'), user_data[b'password']):
-        session_id = serializer.dumps(credentials.email)  # Create a session ID
+        # Generate a random session ID using uuid4
+        session_id = str(uuid.uuid4())
         await redis_client.set(f"session:{session_id}", credentials.email)
         response = JSONResponse(content={"message": "User logged in successfully."})
         response.set_cookie(key="session_id", value=session_id, httponly=True, secure=True)  # Set the cookie
@@ -98,8 +98,11 @@ async def add_personal_details(details: PersonalDetails, session_id: str = Cooki
     if not session_id:
         raise HTTPException(status_code=403, detail="User is not logged in.")
     
-    email = serializer.loads(session_id)  # Get email from session ID
-    await redis_client.hset(f"personal_details:{email}", mapping={
+    email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+
+    await redis_client.hset(f"personal_details:{email.decode('utf-8')}", mapping={
         "name": details.name,
         "date_of_birth": details.date_of_birth,
         "gender": details.gender,
@@ -113,11 +116,14 @@ async def get_personal_details(session_id: str = Cookie(None)):
     if not session_id:
         raise HTTPException(status_code=403, detail="User is not logged in.")
     
-    email = serializer.loads(session_id)  # Get email from session ID
-    result = await redis_client.hgetall(f"personal_details:{email}")
+    email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+    
+    result = await redis_client.hgetall(f"personal_details:{email.decode('utf-8')}")
     if result:
         return {
-            "email": email,
+            "email": email.decode('utf-8'),
             "name": result[b'name'].decode('utf-8'),
             "date_of_birth": result[b'date_of_birth'].decode('utf-8'),
             "gender": result[b'gender'].decode('utf-8'),
@@ -132,8 +138,11 @@ async def update_personal_details(details: PersonalDetails, session_id: str = Co
     if not session_id:
         raise HTTPException(status_code=403, detail="User is not logged in.")
     
-    email = serializer.loads(session_id)  # Get email from session ID
-    await redis_client.hset(f"personal_details:{email}", mapping={
+    email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+
+    await redis_client.hset(f"personal_details:{email.decode('utf-8')}", mapping={
         "name": details.name,
         "date_of_birth": details.date_of_birth,
         "gender": details.gender,
@@ -147,12 +156,15 @@ async def update_password(password_data: PasswordUpdate, session_id: str = Cooki
     if not session_id:
         raise HTTPException(status_code=403, detail="User is not logged in.")
     
-    email = serializer.loads(session_id)  # Get email from session ID
-    user_data = await redis_client.hgetall(f"user:{email}")
+    email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+    
+    user_data = await redis_client.hgetall(f"user:{email.decode('utf-8')}")
 
     if user_data and bcrypt.checkpw(password_data.current_password.encode('utf-8'), user_data[b'password']):
         hashed_new_password = bcrypt.hashpw(password_data.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        await redis_client.hset(f"user:{email}", "password", hashed_new_password)
+        await redis_client.hset(f"user:{email.decode('utf-8')}", "password", hashed_new_password)
         return {"message": "Password updated successfully."}
     else:
         raise HTTPException(status_code=401, detail="Current password is incorrect.")
