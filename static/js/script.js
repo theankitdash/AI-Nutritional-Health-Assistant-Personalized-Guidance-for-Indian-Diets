@@ -12,13 +12,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     const confirmPasswordGroup = document.getElementById('confirm-password-group');
     const logoutButton = document.getElementById('logout-btn');
 
-    // Show the modal on page load
-    window.onload = async function () {
-        const isLoggedIn = await fetchPersonalDetails(); // Fetch user details and check login status
-        if (!isLoggedIn) {
-            authModal.style.display = 'block'; // Show modal only if not logged in
+    // Check login status on page load
+    window.onload = checkLoginStatus;
+    
+    // Check login status on page load
+    async function checkLoginStatus() {
+        // Check if the user is logged in using local storage
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        
+        if (isLoggedIn) {
+            // Verify the session is still active with the server
+            const isSessionActive = await isUserLoggedIn();
+
+            if (isSessionActive) {
+                // If the session is active, fetch personal details
+                fetchPersonalDetails();
+                return; // Exit the function to avoid showing the modal
+            } else {
+                // Reset local storage if the session is inactive
+                localStorage.setItem('isLoggedIn', 'false');
+            }
         }
-    };
+        
+        // Show the modal if the user is not logged in
+        authModal.style.display = 'block';
+    }
 
     // Close modal when user clicks on <span> (x)
     closeModal.onclick = function () {
@@ -31,6 +49,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             authModal.style.display = 'none';
         }
     };
+
+    // Function to check if the user is logged in
+    async function isUserLoggedIn() {
+        try {
+            const response = await fetch(`/personal-details/`, { method: 'GET', credentials: 'include' });
+            return response.ok; // Return true if logged in, false otherwise
+        } catch (error) {
+            alert('Error checking login status:', error);
+            return false; // If error occurs, assume user is not logged in
+        }
+    }
 
     // Email validation function
     function isValidEmail(email) {
@@ -126,6 +155,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         // Show success alert
                         alert('Login Successful!'); 
                         authModal.style.display = 'none'; 
+                        localStorage.setItem('isLoggedIn', 'true'); // Set localStorage flag
                         fetchPersonalDetails(); // Fetch personal details after login
                     } else {
                         const errorData = await response.json();
@@ -236,6 +266,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (response.ok) {
                 alert('Logout successful.');
+                localStorage.setItem('isLoggedIn', 'false');
                 window.location.reload();
             } else {
                 console.error('Error during logout:', response.statusText);
