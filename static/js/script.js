@@ -11,6 +11,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const chatForm = document.getElementById('chat-form');
     const confirmPasswordGroup = document.getElementById('confirm-password-group');
     const logoutButton = document.getElementById('logout-btn');
+    const uploadButton = document.getElementById('upload-btn');
+    const fileInput = document.getElementById('file-input');
 
     // Check login status on page load
     window.onload = checkLoginStatus;
@@ -277,7 +279,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     // Handle Chat Form Submission
-    chatForm.onsubmit = function (event) {
+    chatForm.onsubmit = async function (event) {
         event.preventDefault();
         const message = messageInput.value.trim();
         
@@ -285,13 +287,29 @@ document.addEventListener("DOMContentLoaded", async () => {
             appendMessage('user', message);
             messageInput.value = ''; // Clear input field
 
-            // Simulated response from the bot
-            setTimeout(() => {
-                appendMessage('bot', 'This is a simulated response.');
-            }, 1000);
+            // Call the backend to get the bot's response
+            try {
+                const response = await fetch('/chat/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include', // Include cookies for session management
+                    body: JSON.stringify({ message: message }), // Send the user message
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appendMessage('bot', data.bot_response); // Display the bot's response
+                } else {
+                    appendMessage('bot', 'Error: Failed to get a response from the server.');
+                }
+            } catch (error) {
+                appendMessage('bot', 'Error: Unable to connect to the server.');
+            }
         }
     };
-
+    
     // Function to append messages to the chat
     function appendMessage(sender, text) {
         const messageElement = document.createElement('div');
@@ -300,4 +318,37 @@ document.addEventListener("DOMContentLoaded", async () => {
         messagesContainer.appendChild(messageElement);
         messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to the bottom
     }
+
+    // Show file input when upload button is clicked
+    uploadButton.onclick = () => {
+        fileInput.click(); // Trigger file input click
+    };
+
+    // Handle file upload
+    fileInput.onchange = async function () {
+        const file = fileInput.files[0]; // Get the uploaded file
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload/', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include', // Include cookies for session management
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appendMessage('bot', 'File uploaded successfully: ' + data.filename);
+                } else {
+                    console.error('Error:', response.statusText);
+                    appendMessage('bot', 'Error uploading file.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('bot', 'Error communicating with the server.');
+            }
+        }
+    };
 });

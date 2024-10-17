@@ -1,10 +1,14 @@
 import uuid
-from fastapi import FastAPI, HTTPException, Cookie
+from fastapi import FastAPI, HTTPException, Cookie, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 import aioredis
 import bcrypt
+from model import generate_bot_response
+import magic  
+import pytesseract
+from PIL import Image
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -37,6 +41,9 @@ class UserCredentials(BaseModel):
 class PasswordUpdate(BaseModel):
     current_password: str
     new_password: str
+
+class Message(BaseModel):
+    message: str    
 
 @app.on_event("startup")
 async def startup():
@@ -168,5 +175,52 @@ async def update_password(password_data: PasswordUpdate, session_id: str = Cooki
         return {"message": "Password updated successfully."}
     else:
         raise HTTPException(status_code=401, detail="Current password is incorrect.")
+    
+@app.post("/chat/")
+async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
+    if not session_id:
+        raise HTTPException(status_code=403, detail="User is not logged in.")
+
+    email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+    
+    # Generate response from the AI model
+    bot_response = generate_bot_response(message.message)
+    
+    return {"user": message.message, "bot_response": bot_response}
+
+@app.post("/upload/")
+async def upload_file(file: UploadFile = File(...), session_id: str = Cookie(None)):
+    if not session_id:
+        raise HTTPException(status_code=403, detail="User is not logged in.")
+    
+    email = await redis_client.get(f"session:{session_id}")
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+    
+    content = await extract_file_content(file)
+
+    # Store the content in Redis
+    await redis_client.hset(f"uploads:{email.decode('utf-8')}", mapping={file.filename: content})
+    
+    return {"message": "File uploaded and content stored successfully."}
+
+async def extract_file_content(uploaded_file: UploadFile) -> str:
+    file_content = ""
+    
+    # Detect the file type
+    mime_type = magic.from_buffer(await uploaded_file.read(2048), mime=True)
+    await uploaded_file.seek(0)  # Reset file pointer
+
+    if mime_type.startswith('image/'):
+        image = Image.open(uploaded_file.file)
+        file_content = pytesseract.image_to_string(image)  # Extract text from image
+    elif mime_type in ['text/plain', 'application/pdf']:
+        file_content = (await uploaded_file.read()).decode('utf-8')  # Read and decode text files
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported file type.")
+
+    return file_content    
 
 # Run the application using: uvicorn main:app --reload

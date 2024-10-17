@@ -12,6 +12,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* Header Section */
@@ -83,6 +84,7 @@ header {
   display: flex;
   flex-grow: 1;
   padding-top: 5px;
+  height: calc(100vh - 70px);
 }
 
 /* Chat Section */
@@ -92,6 +94,7 @@ header {
   padding-top: 5px;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 /* Chat Header */
