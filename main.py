@@ -1,3 +1,4 @@
+import os
 import uuid
 from fastapi import FastAPI, HTTPException, Cookie, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse
@@ -5,10 +6,10 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 import aioredis
 import bcrypt
-from model import generate_bot_response
 import magic  
 import pytesseract
 from PIL import Image
+from model import generate_bot_response
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -16,12 +17,16 @@ app = FastAPI()
 # Mount the static directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Redis Database Connection
-REDIS_CONFIG = {
-    "host": "localhost",
-    "port": 6379,
-    "db": 0,
-}
+class Settings(BaseModel):
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+
+    class Config:
+        env_file = ".env"  # Load environment variables from .env file, if present
+
+# Load settings from environment variables or .env file
+settings = Settings()
 
 # Initialize Redis connection
 redis_client = None
@@ -48,7 +53,7 @@ class Message(BaseModel):
 @app.on_event("startup")
 async def startup():
     global redis_client
-    redis_client = await aioredis.from_url(f"redis://{REDIS_CONFIG['host']}:{REDIS_CONFIG['port']}/{REDIS_CONFIG['db']}")
+    redis_client = await aioredis.from_url(f"redis://{settings.redis_host}:{settings.redis_port}/{settings.redis_db}")
 
 @app.on_event("shutdown")
 async def shutdown():
