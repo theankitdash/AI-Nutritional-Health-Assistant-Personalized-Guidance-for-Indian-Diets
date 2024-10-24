@@ -24,7 +24,7 @@ REDIS_CONFIG = {
 }
 
 # Initialize Redis connection
-redis_client = None
+redis_client = aioredis.from_url(f"redis://{REDIS_CONFIG['host']}:{REDIS_CONFIG['port']}/{REDIS_CONFIG['db']}")
 
 # Pydantic models for personal details and user credentials
 class PersonalDetails(BaseModel):
@@ -45,14 +45,6 @@ class PasswordUpdate(BaseModel):
 class Message(BaseModel):
     message: str    
 
-@app.on_event("startup")
-async def startup():
-    global redis_client
-    redis_client = await aioredis.from_url(f"redis://{REDIS_CONFIG['host']}:{REDIS_CONFIG['port']}/{REDIS_CONFIG['db']}")
-
-@app.on_event("shutdown")
-async def shutdown():
-    await redis_client.close()
 
 @app.get("/", response_class=FileResponse)
 async def read_root():
