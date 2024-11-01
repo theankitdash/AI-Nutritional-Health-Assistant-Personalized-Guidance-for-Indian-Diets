@@ -178,9 +178,9 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
         raise HTTPException(status_code=403, detail="Invalid session.")
     
     # Generate response from the AI model
-    bot_response = generate_bot_response(message.message)
+    response = await generate_bot_response(message.message, session_id)
     
-    return {"user": message.message, "bot_response": bot_response}
+    return response
 
 @app.post("/upload/")
 async def upload_file(file: UploadFile = File(...), session_id: str = Cookie(None)):
