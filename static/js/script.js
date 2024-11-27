@@ -40,48 +40,60 @@ document.addEventListener("DOMContentLoaded", async () => {
     const saveHealthConditionsButton = document.getElementById('save-health-conditions');
 
     // Check login status on page load
-    window.onload = checkLoginStatus;
-    
+    window.onload = async () => {
+        await checkLoginStatus();
+    };
+
     // Check login status on page load
     async function checkLoginStatus() {
         // Check if the user is logged in using local storage
         const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
         
         if (isLoggedIn) {
-            // Verify the session is still active with the server
-            const isSessionActive = await isUserLoggedIn();
+            const sessionExpiry = localStorage.getItem('sessionExpiry');
+            const currentTime = new Date().getTime();
 
-            if (isSessionActive) {
+            // If session expiry exists and the current time is less than the expiry time, session is active
+            if (sessionExpiry && currentTime < sessionExpiry) {
+                // Session is active, proceed with fetching data
                 fetchPersonalDetails(); 
                 fetchPreferences();
                 fetchHealthConditions();
-                return; // Exit the function to avoid showing the modal
             } else {
                 // Reset local storage if the session is inactive
                 localStorage.setItem('isLoggedIn', 'false');
+                localStorage.removeItem('sessionExpiry');
+                // Show the modal if session is expired
+                authModal.style.display = 'block';
             }
-        }
-        
-        // Show the modal if the user is not logged in
-        authModal.style.display = 'block';
+        } else {
+            // Show the modal if the user is not logged in
+            authModal.style.display = 'block';
+        } 
+    }
+
+    // Function to handle user login
+    function handleLogin() {
+        // Set the session expiration time (e.g., 1 hour from now)
+        const expiryTime = new Date().getTime() + 3600000; // 1 hour
+
+        // Store the login status and session expiry time in localStorage
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('sessionExpiry', expiryTime);
+
+        // Close the authentication modal (if it's open)
+        authModal.style.display = 'none';
+
+        // Optionally, fetch user data immediately after login
+        fetchPersonalDetails();
+        fetchPreferences();
+        fetchHealthConditions();
     }
 
     // Close modal when user clicks on <span> (x)
     closeModal.addEventListener('click', () => {
         authModal.style.display = 'none';
     });
-
-
-    // Function to check if the user is logged in
-    async function isUserLoggedIn() {
-        try {
-            const response = await fetch(`/personal-details/`, { method: 'GET', credentials: 'include' });
-            return response.ok; // Return true if logged in, false otherwise
-        } catch (error) {
-            alert('Error checking login status:', error);
-            return false; // If error occurs, assume user is not logged in
-        }
-    }
 
     // Show preferences modal
     preferencesBtn.addEventListener('click', () => {
@@ -378,8 +390,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     if (response.ok) {
                         // Show success alert
                         alert('Login Successful!'); 
+                        handleLogin();
                         authModal.style.display = 'none'; 
-                        localStorage.setItem('isLoggedIn', 'true'); // Set localStorage flag
                     } else {
                         const errorData = await response.json();
                         alert(`Error: ${errorData.detail || response.statusText}`);
@@ -467,6 +479,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (response.ok) {
                 alert('Logout successful.');
                 localStorage.setItem('isLoggedIn', 'false');
+                localStorage.removeItem('sessionExpiry');
                 window.location.reload();
             } else {
                 console.error('Error during logout:', response.statusText);
@@ -512,7 +525,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     function appendMessage(sender, text) {
         const messageElement = document.createElement('div');
         messageElement.className = `chat-message ${sender}`;
-        messageElement.textContent = text;
+
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        messageContent.textContent = text;
+
+        messageElement.appendChild(messageContent);
         messagesContainer.appendChild(messageElement);
         messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to the bottom
     }
