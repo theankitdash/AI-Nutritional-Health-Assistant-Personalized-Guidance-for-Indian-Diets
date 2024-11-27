@@ -9,6 +9,7 @@ import magic
 import pytesseract
 from PIL import Image
 from model import generate_bot_response
+from typing import Optional
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -43,16 +44,17 @@ class PasswordUpdate(BaseModel):
     new_password: str
 
 class Message(BaseModel):
-    message: str    
+    message: str  
 
+class Preferences(BaseModel):
+    diet_preference: str      
+
+class HealthConditions(BaseModel):
+    allergies: Optional[str]
 
 @app.get("/", response_class=FileResponse)
 async def read_root():
     return FileResponse("static/index.html")
-
-@app.get("/account-settings", response_class=FileResponse)
-async def read_account_settings():
-    return FileResponse("static/account-settings.html")
 
 @app.post("/register/")
 async def register_user(credentials: UserCredentials):
@@ -110,6 +112,36 @@ async def add_personal_details(details: PersonalDetails, session_id: str = Cooki
     })
     return {"message": "Personal details added successfully."}
 
+@app.post("/preferences/")
+async def add_preferences(preferences: Preferences, session_id: str = Cookie(None)):
+    if not session_id:
+        raise HTTPException(status_code=403, detail="User is not logged in.")
+    
+    email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+    
+    await redis_client.hset(f"preferences:{email.decode('utf-8')}", mapping={
+        "diet_preference": preferences.diet_preference,
+    })
+    
+    return {"message": "Food preferences saved successfully."}
+
+@app.post("/health-conditions/")
+async def add_health_conditions(health_conditions: HealthConditions, session_id: str = Cookie(None)):
+    if not session_id:
+        raise HTTPException(status_code=403, detail="User is not logged in.")
+    
+    email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+    
+    await redis_client.hset(f"health_conditions:{email.decode('utf-8')}", mapping={
+        "allergies": health_conditions.allergies or " ",
+    })
+    
+    return {"message": "Health conditions saved successfully."}
+
 @app.get("/personal-details/")
 async def get_personal_details(session_id: str = Cookie(None)):
     if not session_id:
@@ -131,24 +163,40 @@ async def get_personal_details(session_id: str = Cookie(None)):
         }
     else:
         raise HTTPException(status_code=404, detail="User not found.")
-
-@app.put("/personal-details/")
-async def update_personal_details(details: PersonalDetails, session_id: str = Cookie(None)):
+    
+@app.get("/preferences/")
+async def get_preferences(session_id: str = Cookie(None)):
     if not session_id:
         raise HTTPException(status_code=403, detail="User is not logged in.")
     
     email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
     if not email:
         raise HTTPException(status_code=403, detail="Invalid session.")
+    
+    result = await redis_client.hgetall(f"preferences:{email.decode('utf-8')}")
+    if result:
+        return {
+            "diet_preference": result[b'diet_preference'].decode('utf-8'),
+        }
+    else:
+        raise HTTPException(status_code=404, detail="Preferences not found.")
 
-    await redis_client.hset(f"personal_details:{email.decode('utf-8')}", mapping={
-        "name": details.name,
-        "date_of_birth": details.date_of_birth,
-        "gender": details.gender,
-        "height": details.height,
-        "weight": details.weight,
-    })
-    return {"message": "Personal details updated successfully."}
+@app.get("/health-conditions/")
+async def get_health_conditions(session_id: str = Cookie(None)):
+    if not session_id:
+        raise HTTPException(status_code=403, detail="User is not logged in.")
+    
+    email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+    
+    result = await redis_client.hgetall(f"health_conditions:{email.decode('utf-8')}")
+    if result:
+        return {
+            "allergies": result[b'allergies'].decode('utf-8') if result.get(b'allergies') else None,
+        }
+    else:
+        raise HTTPException(status_code=404, detail="Health conditions not found.")          
 
 @app.put("/update-password/")
 async def update_password(password_data: PasswordUpdate, session_id: str = Cookie(None)):
@@ -178,7 +226,7 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
         raise HTTPException(status_code=403, detail="Invalid session.")
     
     # Generate response from the AI model
-    response = await generate_bot_response(message.message, session_id)
+    response = await generate_bot_response(message.message, session_id, redis_client)
     
     return response
 

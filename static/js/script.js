@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const authModal = document.getElementById('auth-modal');
-    const closeModal = document.querySelector('.close');
+    const closeModal = document.getElementById('close-auth-modal');
     const authForm = document.getElementById('auth-form');
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
@@ -13,6 +13,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     const logoutButton = document.getElementById('logout-btn');
     const uploadButton = document.getElementById('upload-btn');
     const fileInput = document.getElementById('file-input');
+
+    // Personal details modal and settings
+    const personalDetailsModal = document.getElementById('personal-details-modal');
+    const personalDetailsBtn = document.getElementById('personal-details-btn');
+    const closePersonalDetailsModal = document.getElementById('close-personal-details');
+    const savePersonalDetailsBtn = document.getElementById('save-personal-details');
+
+    // Account settings modal and settings
+    const accountSettingsModal = document.getElementById('account-settings-modal');
+    const accountSettingsBtn = document.getElementById('account-settings-btn');
+    const closeAccountSettingsModal = document.getElementById('close-account-settings');
+    const changePasswordBtn = document.getElementById('change-password');
+    const newPasswordInput = document.getElementById('newPassword');
+
+    // Preferences modal
+    const preferencesModal = document.getElementById('preferences-modal');
+    const preferencesBtn = document.getElementById('preferences-btn');
+    const closePreferencesModal = document.getElementById('close-preferences');
+    const savePreferencesButton = document.getElementById('save-preferences');
+
+    // Health conditions modal
+    const healthConditionsModal = document.getElementById('health-conditions-modal');
+    const healthConditionsBtn = document.getElementById('health-conditions-btn');
+    const closeHealthConditionsModal = document.getElementById('close-health-conditions');
+    const saveHealthConditionsButton = document.getElementById('save-health-conditions');
 
     // Check login status on page load
     window.onload = checkLoginStatus;
@@ -27,8 +52,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             const isSessionActive = await isUserLoggedIn();
 
             if (isSessionActive) {
-                // If the session is active, fetch personal details
-                fetchPersonalDetails();
+                fetchPersonalDetails(); 
+                fetchPreferences();
+                fetchHealthConditions();
                 return; // Exit the function to avoid showing the modal
             } else {
                 // Reset local storage if the session is inactive
@@ -41,16 +67,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Close modal when user clicks on <span> (x)
-    closeModal.onclick = function () {
+    closeModal.addEventListener('click', () => {
         authModal.style.display = 'none';
-    };
+    });
 
-    // Close modal when user clicks anywhere outside of the modal
-    window.onclick = function (event) {
-        if (event.target === authModal) {
-            authModal.style.display = 'none';
-        }
-    };
 
     // Function to check if the user is logged in
     async function isUserLoggedIn() {
@@ -61,6 +81,194 @@ document.addEventListener("DOMContentLoaded", async () => {
             alert('Error checking login status:', error);
             return false; // If error occurs, assume user is not logged in
         }
+    }
+
+    // Show preferences modal
+    preferencesBtn.addEventListener('click', () => {
+        preferencesModal.style.display = 'block';
+    });
+
+    // Close preferences modal
+    closePreferencesModal.addEventListener('click', () => {
+        preferencesModal.style.display = 'none';
+    });
+    
+
+    // Save preferences
+    savePreferencesButton.addEventListener('click', async () => {
+        const selectedPreference = document.querySelector('input[name="food-preference"]:checked')?.value;
+
+        if (selectedPreference) {
+            try {
+                await fetchData('/preferences', "POST", { diet_preference: selectedPreference });
+                alert("Preferences saved successfully!");
+                preferencesModal.style.display = 'none';
+            } catch (error) {
+                alert("Error saving preferences:", error);
+            }
+        } else {
+            alert("Please select a food preference.");
+        }
+    });
+
+    // Show health conditions modal
+    healthConditionsBtn.addEventListener('click', () => {
+        healthConditionsModal.style.display = 'block';
+    });
+
+    // Close health conditions modal
+    closeHealthConditionsModal.addEventListener('click', () => {
+        healthConditionsModal.style.display = 'none';
+    });
+
+    // Save health conditions
+    saveHealthConditionsButton.addEventListener('click', async () => {
+        const allergies = document.getElementById("allergies").value;
+
+        if (allergies) {
+            try {
+                await fetchData('/health-conditions', "POST", { allergies });
+                alert("Health conditions saved successfully!");
+                healthConditionsModal.style.display = 'none';
+            } catch (error) {
+                alert("Error saving health conditions:", error);
+            }
+        } else {
+            alert("Please enter your allergies.");
+        }
+    });
+
+     // Event to show personal details modal
+     personalDetailsBtn.addEventListener('click', () => {
+        personalDetailsModal.style.display = 'block';
+    });
+
+    // Event to close personal details modal
+    closePersonalDetailsModal.addEventListener('click', () => {
+        personalDetailsModal.style.display = 'none';
+    });
+
+    // Event to save personal details
+    savePersonalDetailsBtn.addEventListener('click', async () => {
+        const name = document.getElementById("name").value;
+        const dateOfBirth = document.getElementById("dateOfBirth").value;
+        const gender = document.getElementById("gender").value;
+        const height = parseFloat(document.getElementById("height").value);
+        const weight = parseFloat(document.getElementById("weight").value);
+
+        if (!name || !dateOfBirth || !gender || isNaN(height) || height <= 0 || isNaN(weight) || weight <= 0) {
+            alert("Please fill all fields correctly.");
+            return;
+        }
+
+        try {
+            await fetchData("/personal-details/", "POST", { name, date_of_birth: dateOfBirth, gender, height, weight });
+            alert("Profile saved successfully!");
+            personalDetailsModal.style.display = 'none';
+        } catch (error) {
+            alert(`Error saving profile: ${error.message}`);
+        }
+    });
+
+    // Event to show account settings modal
+    accountSettingsBtn.addEventListener('click', () => {
+        accountSettingsModal.style.display = 'block';
+    });
+
+    // Event to close account settings modal
+    closeAccountSettingsModal.addEventListener('click', () => {
+        accountSettingsModal.style.display = 'none';
+    });
+
+    const feedbackElement = document.getElementById('new-password-feedback');
+    newPasswordInput.addEventListener("input", () => {
+        if (isStrongPassword(newPasswordInput.value)) {
+            feedbackElement.textContent = 'Strong password.';
+            feedbackElement.style.color = 'green';
+        } else {
+            feedbackElement.textContent = 'Weak password. Ensure it meets the requirements.';
+            feedbackElement.style.color = 'red';
+        }
+    });
+
+    // Event to change password
+    changePasswordBtn.addEventListener('click', async () => {
+        const currentPassword = document.getElementById("currentPassword").value;
+        const newPassword = newPasswordInput.value;
+
+        if (isStrongPassword(newPassword)) {
+            try {
+                await fetchData("/update-password/", "PUT", { current_password: currentPassword, new_password: newPassword });
+                alert("Password changed successfully!");
+                accountSettingsModal.style.display = 'none';
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        } else {
+            alert("Password does not meet the required strength.");
+        }
+    });
+
+    // Function to fetch personal details
+    async function fetchPersonalDetails() {
+        try {
+            const data = await fetchData("/personal-details/", "GET");
+            console.log("Fetched Personal Details:", data);
+            document.getElementById("welcome-name").textContent = data.name;
+            document.getElementById("name").value = data.name;
+            document.getElementById("dateOfBirth").value = data.date_of_birth;
+            document.getElementById("gender").value = data.gender;
+            document.getElementById("height").value = data.height;
+            document.getElementById("weight").value = data.weight;
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+        }
+    }
+
+    // Function to fetch preferences
+    async function fetchPreferences() {
+        try {
+            const data = await fetchData("/preferences", "GET");
+            console.log("Fetched Preferences:", data);
+            // Set the food preference on the modal
+            if (data.diet_preference) {
+                document.querySelector(`input[name="food-preference"][value="${data.diet_preference}"]`).checked = true;
+            }
+        } catch (error) {
+            alert(`Error fetching preferences: ${error.message}`);
+        }
+    }
+
+    // Function to fetch health conditions
+    async function fetchHealthConditions() {
+        try {
+            const data = await fetchData("/health-conditions", "GET");
+            console.log("Fetched Health Conditions:", data);
+            // Set allergies data
+            document.getElementById("allergies").value = data.allergies || '';
+        } catch (error) {
+            alert(`Error fetching health conditions: ${error.message}`);
+        }
+    }
+
+    // Fetch data helper function
+    async function fetchData(url, method, body = null) {
+        const options = {
+            method,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+        };
+        if (body) {
+            options.body = JSON.stringify(body);
+        }
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail);
+        }
+        return response.json();
     }
 
     // Email validation function
@@ -129,20 +337,34 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    // Function to enable/disable real-time validation feedback
+    function toggleValidationFeedback(isRegistration) {
+        if (isRegistration) {
+            // Enable validation feedback for registration
+            usernameInput.addEventListener('input', updateEmailValidationUI);
+            passwordInput.addEventListener('input', updatePasswordValidationUI);
+            confirmPasswordInput.addEventListener('input', updateConfirmPasswordValidationUI);
+        } else {
+            // Disable validation feedback for login
+            usernameInput.removeEventListener('input', updateEmailValidationUI);
+            passwordInput.removeEventListener('input', updatePasswordValidationUI);
+            confirmPasswordInput.removeEventListener('input', updateConfirmPasswordValidationUI);
+        }
+    }
+
     // Handle Auth Form Submission
     authForm.onsubmit = async function (event) {
         event.preventDefault();
         const username = usernameInput.value;
         const password = passwordInput.value;
 
-        // Validate email format
-        if (!isValidEmail(username)) {
-            alert('Please enter a valid email address.');
-            return; // Prevent submission if email is not valid
-        }
+        // Check if we are in the login process (when confirmPasswordGroup is hidden)
+        const isLogin = confirmPasswordGroup.style.display === 'none';
 
-        // Login Logic
-        if (confirmPasswordGroup.style.display === 'none') {
+        if (isLogin) {
+            // Disable validation feedback for login
+            toggleValidationFeedback(false);
+
             if (username && password) {
                 try {
                     const response = await fetch('/login/', {
@@ -158,7 +380,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                         alert('Login Successful!'); 
                         authModal.style.display = 'none'; 
                         localStorage.setItem('isLoggedIn', 'true'); // Set localStorage flag
-                        fetchPersonalDetails(); // Fetch personal details after login
                     } else {
                         const errorData = await response.json();
                         alert(`Error: ${errorData.detail || response.statusText}`);
@@ -185,9 +406,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     });
 
                     if (response.ok) {
-                        // Show success alert
                         alert('User registration successful! Please add personal details.');
-                        window.location.href = '/account-settings';
+                        authModal.style.display = 'none';
+                        personalDetailsModal.style.display = 'block';
                     }
                 } catch (error) {
                     console.error('Error during registration:', error);
@@ -197,11 +418,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
     };
-
-    // Event listeners for real-time validation
-    usernameInput.addEventListener('input', updateEmailValidationUI);
-    passwordInput.addEventListener('input', updatePasswordValidationUI);
-    confirmPasswordInput.addEventListener('input', updateConfirmPasswordValidationUI);
 
     // Handle Registration Button
     registerButton.onclick = function () {
@@ -218,6 +434,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             updateEmailValidationUI();
             updatePasswordValidationUI();
             updateConfirmPasswordValidationUI();
+
+            // Enable validation feedback for registration
+            toggleValidationFeedback(true);
         } else {
             // Switch back to login
             confirmPasswordGroup.style.display = 'none';
@@ -231,32 +450,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             updateEmailValidationUI();
             updatePasswordValidationUI();
             updateConfirmPasswordValidationUI();
+
+            // Disable validation feedback for login
+            toggleValidationFeedback(false);
         }
     };
-
-    // Fetch Personal Details after Login
-    async function fetchPersonalDetails() {
-        
-        try {
-            const response = await fetch(`/personal-details/`, {
-                method: 'GET',
-                credentials: 'include', // Include cookies with the request
-            });
-            
-            if (response.ok) {
-                const personalDetails = await response.json();
-                document.getElementById("welcome-name").textContent = personalDetails.name;
-                return true;
-
-            } else {
-                alert('Error fetching personal details:', response.statusText);
-                return false;
-            }
-        } catch (error) {
-            alert('Error during fetch personal details:', error);
-            return false;
-        }
-    }
 
     // Handle Logout
     logoutButton.onclick = async function () {

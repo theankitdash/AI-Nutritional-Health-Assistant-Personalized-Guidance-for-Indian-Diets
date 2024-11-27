@@ -12,44 +12,149 @@
     <div class="left-header">
       <h2>&copy; Nutrify-Health.</h2>
     </div>
-    <div class="right-header"></div>
-      <nav class="header-menu">
-        <ul>
-          <li><a href="/account-settings">Account Settings</a></li>
-          <li><button type="button" id="logout-btn">Logout</button></li>
-        </ul>
-      </nav>
+    <div class="right-header">
+      <button id="logout-btn">Logout</button>
     </div>
   </header>  
 
-  <main class="main-content">
+  <div class="main-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <ul class="sidebar-menu">
+        <li><button id="personal-details-btn">Personal Details</button></li>
+        <li><button id="preferences-btn">Preferences</button></li>
+        <li><button id="health-conditions-btn">Health Conditions</button></li>
+        <li><button id="chat-history-btn">Chat History</button></li>
+        <li><button id="account-settings-btn">Account Settings</button></li>
+      </ul>
+    </aside>
 
-    <!-- Chat Section -->
-    <div class="chat-container">
-      <div class="chat-header">
-        <h2>Welcome, <span id="welcome-name"></span></h2>
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Chat Section -->
+      <div class="chat-container">
+        <div class="chat-header">
+          <h2>Welcome, <span id="welcome-name"></span></h2>
+        </div>
+
+        <div class="chat-messages" id="messages">
+          <div class="chat-message user">
+            <div class="message-content"></div>
+          </div>
+          <div class="chat-message bot">
+            <div class="message-content"></div>
+          </div>
+        </div>
+
+        <form class="chat-form" id="chat-form">
+          <input type="text" id="message-input" placeholder="Type a message..." required>
+          <input type="file" id="file-input" hidden>
+          <button type="button" id="upload-btn" title="Upload file">&#x1F4CE;</button>
+          <button type="submit">Send</button>
+        </form>
       </div>
+    </main>
+  </div>
 
-      <div class="chat-messages" id="messages">
-        <!-- Messages will appear here -->
+  <!-- Personal Details Modal -->
+  <div id="personal-details-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" id="close-personal-details">&times;</span>
+      <h2>Personal Details</h2>
+      <div class="setting">
+        <label for="name">Full Name:</label>
+        <input type="text" id="name" placeholder="Enter your full name">
       </div>
-
-      <form class="chat-form" id="chat-form">
-        <input type="text" id="message-input" placeholder="Type a message..." required>
-
-        <!-- File Upload Button -->
-        <input type="file" id="file-input" hidden>
-        <button type="button" id="upload-btn" title="Upload file">&#x1F4CE;</button>
-
-        <button type="submit">Send</button>
-      </form>
+      <div class="setting">
+        <label for="dateOfBirth">Date of Birth:</label>
+        <input type="date" id="dateOfBirth">
+      </div>
+      <div class="setting">
+        <label for="gender">Gender:</label>
+        <select id="gender">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label for="height">Height (in cm):</label>
+        <input type="number" id="height" placeholder="Enter your height">
+      </div>
+      <div class="setting">
+        <label for="weight">Weight (in kg):</label>
+        <input type="number" id="weight" placeholder="Enter your weight">
+      </div>
+      <button id="save-personal-details" type="button">Save</button>
     </div>
-  </main>
+  </div>
+
+  <!-- Preferences Modal -->
+  <div id="preferences-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" id="close-preferences">&times;</span>
+      <h2>Preferences</h2>
+      <div class="setting">
+        <label>Food Preference:</label>
+        <div>
+          <input type="radio" id="veg" name="food-preference" value="veg">
+          <label for="veg">Vegetarian</label>
+        </div>
+        <div>
+          <input type="radio" id="non-veg" name="food-preference" value="non-veg">
+          <label for="non-veg">Non-Vegetarian</label>
+        </div>
+      </div>
+      <button id="save-preferences" type="button">Save Preferences</button>
+    </div>
+  </div>
+
+  <!-- Health Conditions Modal -->
+  <div id="health-conditions-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" id="close-health-conditions">&times;</span>
+      <h2>Health Conditions</h2>
+      <div class="setting">
+        <label for="allergies">Allergies:</label>
+        <input type="text" id="allergies" placeholder="Enter any allergies">
+      </div>
+      <button id="save-health-conditions" type="button">Save Health Conditions</button>
+    </div>
+  </div>
+
+  <!-- Chat History Modal -->
+  <div id="chat-history-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" id="close-chat-history">&times;</span>
+      <h2>Chat History</h2>
+      <div class="chat-history" id="chat-history">
+        <!-- Chat history will be displayed here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Settings Modal -->
+  <div id="account-settings-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" id="close-account-settings">&times;</span>
+      <h2>Change Password</h2>
+      <div class="setting">
+        <label for="currentPassword">Current Password:</label>
+        <input type="password" id="currentPassword" placeholder="Enter your current password">
+      </div>
+      <div class="setting">
+        <label for="newPassword">New Password:</label>
+        <input type="password" id="newPassword" placeholder="Enter your new password">
+        <div id="new-password-feedback"></div>
+      </div>
+      <button id="change-password" type="button">Change Password</button>
+    </div>
+  </div>
 
   <!-- Login/Register Modal -->
-  <div id="auth-modal" class="modal">
+  <div id="auth-modal" class="modal" style="display: none;">
     <div class="modal-content">
-      <span class="close">&times;</span>
+      <span class="close" id="close-auth-modal">&times;</span>
       <h2 id="modal-title">Login</h2>
       <form id="auth-form">
         <div class="form-group">
