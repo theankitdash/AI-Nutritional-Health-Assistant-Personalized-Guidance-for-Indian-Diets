@@ -8,8 +8,7 @@ import bcrypt
 import magic  
 import pytesseract
 from PIL import Image
-from model import generate_bot_response
-from typing import Optional
+from chatbot import generate_bot_response
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -50,7 +49,7 @@ class Preferences(BaseModel):
     diet_preference: str      
 
 class HealthConditions(BaseModel):
-    allergies: Optional[str]
+    allergies: str
 
 @app.get("/", response_class=FileResponse)
 async def read_root():
