@@ -1,10 +1,5 @@
-import pandas as pd
 from aioredis import Redis
-import health_metrics
-
-# Load dataset
-DATASET_PATH = "Food_DATASET.csv"
-food_data = pd.read_csv(DATASET_PATH)
+import health_metrics        
 
 async def generate_bot_response(user_message: str, session_id: str, redis_client: Redis) -> dict:
     # Default response
@@ -110,15 +105,15 @@ async def generate_bot_response(user_message: str, session_id: str, redis_client
     #     bot_response = (f"Sodium status: {electrolyte_info['sodium_status']}, "
     #                     f"Potassium status: {electrolyte_info['potassium_status']}.")
 
-    elif "track nutrients" in user_message.lower():
-        try:
-            food_items = [item.strip() for item in user_message.split(":")[1].split(",")]
-            nutrients = health_metrics.track_nutrients(food_items, food_data)
-            bot_response = (f"Nutrients from your food: {nutrients['calories']} kcal, "
-                            f"{nutrients['protein']}g protein, {nutrients['carbs']}g carbs, "
-                            f"{nutrients['fat']}g fat.")
-        except Exception:
-            bot_response = "I couldn't track nutrients. Ensure you provide a list of food items separated by commas."
+    # elif "track nutrients" in user_message.lower():
+    #     try:
+    #         food_items = [item.strip() for item in user_message.split(":")[1].split(",")]
+    #         nutrients = health_metrics.track_nutrients(food_items, food_data)
+    #         bot_response = (f"Nutrients from your food: {nutrients['calories']} kcal, "
+    #                         f"{nutrients['protein']}g protein, {nutrients['carbs']}g carbs, "
+    #                         f"{nutrients['fat']}g fat.")
+    #     except Exception:
+    #         bot_response = "I couldn't track nutrients. Ensure you provide a list of food items separated by commas."
 
     # Return response
     return {"bot_response": bot_response}

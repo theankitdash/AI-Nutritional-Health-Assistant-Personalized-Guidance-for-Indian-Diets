@@ -1,5 +1,3 @@
-# health_metrics.py
-
 import datetime
 
 def calculate_age(dob: str) -> int:
