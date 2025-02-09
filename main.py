@@ -8,7 +8,7 @@ import bcrypt
 import magic  
 import pytesseract
 from PIL import Image
-from chatbot import generate_bot_response
+from chatbot1 import generate_bot_response
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -50,6 +50,11 @@ class Preferences(BaseModel):
 
 class HealthConditions(BaseModel):
     allergies: str
+
+class ChatMessage(BaseModel):
+    user_message: str
+    bot_response: str
+    chat_id: str
 
 @app.get("/", response_class=FileResponse)
 async def read_root():
@@ -226,8 +231,50 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     
     # Generate response from the AI model
     response = await generate_bot_response(message.message, session_id, redis_client)
+
+    # Save chat history (user message, bot response, feedback)
+    chat_id = str(uuid.uuid4())  # Generate a unique ID for this chat
+
+    chat_data = {
+        "user_message": message.message,
+        "bot_response": response['bot_response'],
+    }
     
-    return response
+    # Store chat in Redis (list to store chat IDs, hash to store chat data)
+    await redis_client.rpush(f"chat_history:{email.decode('utf-8')}", chat_id)
+    await redis_client.hset(f"chat_history:{email.decode('utf-8')}:{chat_id}", mapping=chat_data)
+    
+    # Return structured data with the chat message
+    return ChatMessage(
+        chat_id=chat_id,
+        user_message=message.message,
+        bot_response=response['bot_response']
+    )
+
+@app.get("/chat-history/")
+async def get_chat_history(session_id: str = Cookie(None)):
+    if not session_id:
+        raise HTTPException(status_code=403, detail="User is not logged in.")
+
+    email = await redis_client.get(f"session:{session_id}")  # Retrieve email using session ID
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+    
+    # Get all chat history for the user
+    chat_keys = await redis_client.keys(f"chat_history:{email.decode('utf-8')}*")
+    if not chat_keys:
+        raise HTTPException(status_code=404, detail="No chat history found.")
+    
+    chat_history = []
+    for chat_key in chat_keys:
+        chat_data = await redis_client.hgetall(chat_key)
+        chat_history.append(ChatMessage(
+            chat_id=chat_key.decode('utf-8').split(":")[-1],  # Extract chat_id from the key
+            user_message=chat_data.get(b"user_message", b"").decode('utf-8'),
+            bot_response=chat_data.get(b"bot_response", b"").decode('utf-8'),
+        ))
+
+    return {"chat_history": chat_history}
 
 @app.post("/upload/")
 async def upload_file(file: UploadFile = File(...), session_id: str = Cookie(None)):
