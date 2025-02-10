@@ -64,7 +64,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 fetchPersonalDetails(); 
                 fetchPreferences();
                 fetchHealthConditions();
-                fetchChatHistory();
             } else {
                 // Reset local storage if the session is inactive
                 localStorage.setItem('isLoggedIn', 'false');
@@ -94,22 +93,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         fetchPersonalDetails();
         fetchPreferences();
         fetchHealthConditions();
-        fetchChatHistory();
     }
 
     // Close modal when user clicks on <span> (x)
     closeModal.addEventListener('click', () => {
         authModal.style.display = 'none';
-    });
-
-    // Open chat history modal 
-    chathistoryBtn.addEventListener('click', () => {
-        chathistoryModal.style.display = 'block';
-    });
-
-    // Close chat history modal
-    closechathistoryModal.addEventListener('click', () => {
-        chathistoryModal.style.display = 'none';
     });
 
     // Show preferences modal
@@ -279,38 +267,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             alert(`Error fetching health conditions: ${error.message}`);
         }
     }
-
-
-    // Function to fetch chat history from the server
-    async function fetchChatHistory() {
-        try {
-            const data = await fetchData("/chat-history", "GET");
-            console.log("Fetched Chat History:", data);
-
-            const chatHistoryContainer = document.getElementById('chat-history');
-
-            if (data.chat_history && data.chat_history.length > 0) {
-                data.chat_history.forEach(chat => {
-                    // Check if the chat message is already in the history to avoid duplicates
-                    if (!document.getElementById(`chat-${chat.chat_id}`)) {
-                        const chatDiv = document.createElement('div');
-                        chatDiv.classList.add('chat-item');
-                        chatDiv.id = `chat-${chat.chat_id}`; // Assign a unique ID to prevent duplicate entries
-                        chatDiv.innerHTML = `
-                            <div><strong>User:</strong> ${chat.user_message}</div>
-                            <div><strong>Bot:</strong> ${chat.bot_response}</div>
-                        `;
-                        chatHistoryContainer.appendChild(chatDiv);
-                    }
-                });
-            } else if (!chatHistoryContainer.innerHTML.trim()) {
-                chatHistoryContainer.innerHTML = '<p>No chat history available.</p>';
-            }
-        } catch (error) {
-            alert(`Error fetching chat history: ${error.message}`);
-        }
-    }
-
 
     // Fetch data helper function
     async function fetchData(url, method, body = null) {
