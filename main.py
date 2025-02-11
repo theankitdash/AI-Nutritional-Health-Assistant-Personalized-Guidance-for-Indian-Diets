@@ -230,12 +230,6 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     
     # Generate response from the AI model
     response = await generate_bot_response(message.message, session_id, redis_client)
-
-    # Save chat history (user message, bot response)
-    chat_data = f"User: {message.message} | Bot: {response['bot_response']}"
-
-    # Append chat data to the user's chat history list in Redis
-    await redis_client.rpush(f"chat_history:{email.decode('utf-8')}", chat_data)
     
     # Return structured data with the chat message
     return ChatMessage(

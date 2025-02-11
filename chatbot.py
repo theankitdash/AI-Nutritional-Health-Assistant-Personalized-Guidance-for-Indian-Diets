@@ -1,3 +1,4 @@
+import ollama
 from aioredis import Redis
 import health_metrics        
 
@@ -115,5 +116,16 @@ async def generate_bot_response(user_message: str, session_id: str, redis_client
     #     except Exception:
     #         bot_response = "I couldn't track nutrients. Ensure you provide a list of food items separated by commas."
 
+    # Create a prompt for TinyLlama to process
+    prompt = (
+        f"User: {user_message}\n"
+        f"User Profile: Weight: {weight} kg, Height: {height} cm, Age: {age}, Gender: {gender}, "
+        f"Diet Preference: {diet_preference}, Allergies: {allergies}\n"
+        f"Bot:"
+    )
+
+    # Get response from TinyLlama using Ollama
+    bot_response = ollama.chat(model="tinyllama", messages=[{"role": "user", "content": prompt}])["message"]["content"]
+    
     # Return response
     return {"bot_response": bot_response}
