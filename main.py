@@ -9,6 +9,10 @@ import magic
 import pytesseract
 from PIL import Image
 from chatbot import generate_bot_response
+from io import BytesIO
+import pytesseract
+import pdfplumber
+import fitz
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -248,23 +252,42 @@ async def upload_file(file: UploadFile = File(...), session_id: str = Cookie(Non
     
     content = await extract_file_content(file)
 
-    # Store the content in Redis
-    await redis_client.hset(f"uploads:{email.decode('utf-8')}", mapping={file.filename: content})
+    analyzed_content = await generate_bot_response(content, session_id, redis_client)
     
-    return {"message": "File uploaded and content stored successfully."}
+    return analyzed_content
 
 async def extract_file_content(uploaded_file: UploadFile) -> str:
     file_content = ""
-    
+
     # Detect the file type
-    mime_type = magic.from_buffer(await uploaded_file.read(2048), mime=True)
+    mime = magic.Magic(mime=True)
+    first_bytes = await uploaded_file.read(2048)
+    mime_type = mime.from_buffer(first_bytes)
     await uploaded_file.seek(0)  # Reset file pointer
 
     if mime_type.startswith('image/'):
-        image = Image.open(uploaded_file.file)
-        file_content = pytesseract.image_to_string(image)  # Extract text from image
-    elif mime_type in ['text/plain', 'application/pdf']:
-        file_content = (await uploaded_file.read()).decode('utf-8')  # Read and decode text files
+        image_bytes = await uploaded_file.read()  # Read file into memory
+        image = Image.open(BytesIO(image_bytes))  # Open image from memory
+        file_content = pytesseract.image_to_string(image)  # Extract text
+    elif mime_type == "text/plain":
+        file_content = (await uploaded_file.read()).decode("utf-8")  # Read text file
+    elif mime_type == "application/pdf":
+        pdf_bytes = await uploaded_file.read()  # Read file into memory
+        pdf_reader = fitz.open(stream=pdf_bytes, filetype="pdf")  # Load PDF in memory
+        extracted_text = ""
+        # Use pdfplumber for high-accuracy text extraction
+        with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages:
+                extracted_text += page.extract_text() or ""  # Extract formatted text
+        
+        # If no text was found, use OCR on each page
+        if not extracted_text.strip():
+            for page_num in range(len(pdf_reader)):
+                pix = pdf_reader[page_num].get_pixmap()  # Convert PDF page to image
+                img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                extracted_text += pytesseract.image_to_string(img)  # OCR processing
+        
+        file_content = extracted_text
     else:
         raise HTTPException(status_code=400, detail="Unsupported file type.")
 

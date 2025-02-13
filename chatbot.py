@@ -1,10 +1,26 @@
 import ollama
 from aioredis import Redis
-import health_metrics        
+import health_metrics
+import os
+import aiohttp
+from dotenv import load_dotenv
+
+# Load the API key from .env file
+load_dotenv()
+USDA_API_KEY = os.getenv("USDA_API_KEY")
+
+USDA_API_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"
+
+async def fetch_nutrition_data_from_usda(query: str):
+    """Fetch nutrition data from USDA API based on user input."""
+    params = {"query": query, "api_key": USDA_API_KEY}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(USDA_API_URL, params=params) as response:
+            if response.status == 200:
+                return await response.json()
+            return None
 
 async def generate_bot_response(user_message: str, session_id: str, redis_client: Redis) -> dict:
-    # Default response
-    bot_response = "I'm sorry, I don't understand. Can you please rephrase?"
 
     # Fetch user details from Redis
     user_email = await redis_client.get(f"session:{session_id}")
@@ -43,7 +59,14 @@ async def generate_bot_response(user_message: str, session_id: str, redis_client
     except KeyError:
         return {"bot_response": "Some details are missing in your profile. Please update your weight, height, date of birth, and gender."}
 
-    # 🔹 **DYNAMICALLY PASS ALL DETAILS TO TINYLLAMA**
+    # Check if the query is related to nutrition
+    if any(keyword in user_message.lower() for keyword in ["calories", "nutrients", "recipe", "meal plan", "diet"]):
+        nutrition_data = await fetch_nutrition_data_from_usda(user_message)
+        if nutrition_data:
+            return {"bot_response": f"Here is the USDA-based nutrition information: {nutrition_data}"}
+        return {"bot_response": "I'm unable to fetch nutrition details at the moment. Please try again later."}
+
+    # 🔹 Construct a strict prompt for TinyLlama
     prompt = (
         f"User: {user_message}\n"
         f"User Profile:\n"
@@ -59,7 +82,7 @@ async def generate_bot_response(user_message: str, session_id: str, redis_client
         f"- Hydration Level: {hydration} mL/day\n"
         f"- Preferences: {preferences_data}\n"
         f"- Health Conditions: {health_data}\n"
-        f"Bot: Answer the user's query based on the above information."
+        f"Bot: Only respond using real-time suggestions, emotional support, or valid data from health metric calculations."
     )
 
     # **TinyLlama Generates Response Automatically**

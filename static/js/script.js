@@ -561,7 +561,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    appendMessage('bot', 'File uploaded successfully: ' + data.filename);
+                    appendMessage('bot', 'File analyzed successfully: ' + data.bot_response);
                 } else {
                     console.error('Error:', response.statusText);
                     appendMessage('bot', 'Error uploading file.');
