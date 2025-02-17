@@ -8,11 +8,11 @@ import bcrypt
 import magic  
 import pytesseract
 from PIL import Image
-from chatbot import generate_bot_response
 from io import BytesIO
 import pytesseract
 import pdfplumber
 import fitz
+from chatbot import generate_bot_response
 
 # Initialize FastAPI app
 app = FastAPI()
