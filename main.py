@@ -12,7 +12,8 @@ from io import BytesIO
 import pytesseract
 import pdfplumber
 import fitz
-from chatbot import generate_bot_response
+import health_metrics
+import ollama
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -223,6 +224,30 @@ async def update_password(password_data: PasswordUpdate, session_id: str = Cooki
     else:
         raise HTTPException(status_code=401, detail="Current password is incorrect.")
     
+@app.get("/chat/topics/")
+async def get_chat_topics(session_id: str = Cookie(None)):
+    if not session_id:
+        raise HTTPException(status_code=403, detail="User is not logged in.")
+
+    email = await redis_client.get(f"session:{session_id}")
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+
+    topics = await redis_client.smembers(f"{email}:topics")
+    return {"topics": list(topics)}
+
+@app.get("/chat/history/")
+async def get_chat_history(topic: str, session_id: str = Cookie(None)):
+    if not session_id:
+        raise HTTPException(status_code=403, detail="User is not logged in.")
+
+    email = await redis_client.get(f"session:{session_id}")
+    if not email:
+        raise HTTPException(status_code=403, detail="Invalid session.")
+
+    history = await redis_client.lrange(f"{email}:chats:{topic}", 0, -1)  # Fetch full history
+    return {"topic": topic, "history": history}
+
 @app.post("/chat/")
 async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     if not session_id:
@@ -232,14 +257,106 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     if not email:
         raise HTTPException(status_code=403, detail="Invalid session.")
     
+    # Detect or create a chat topic
+    topic = await redis_client.get(f"{email}:current_topic")
+    if not topic:
+        topic = await detect_topic(message.message)  # Generate a topic
+        await redis_client.set(f"{email}:current_topic", topic)
+        await redis_client.sadd(f"{email}:topics", topic)
+    
     # Generate response from the AI model
     response = await generate_bot_response(message.message, session_id, redis_client)
     
+    # Save the full chat history
+    chat_entry = f"User: {message.message}\nBot: {response['bot_response']}"
+    await redis_client.rpush(f"{email}:chats:{topic}", chat_entry)
+
     # Return structured data with the chat message
     return ChatMessage(
         user_message=message.message,
         bot_response=response['bot_response']
     )
+
+async def generate_bot_response(user_message: str, session_id: str, redis_client) -> dict:
+    """Generate bot response using TinyLlama with health details and past context."""
+    
+    user_email = await redis_client.get(f"session:{session_id}")
+    if not user_email:
+        return {"bot_response": "Session expired or invalid. Please log in again."}
+
+    user_email = user_email.decode("utf-8")
+    
+    # Fetch user details
+    personal_details = await redis_client.hgetall(f"personal_details:{user_email}")
+    preferences = await redis_client.hgetall(f"preferences:{user_email}")
+    health_conditions = await redis_client.hgetall(f"health_conditions:{user_email}")
+
+    if not personal_details:
+        return {"bot_response": "Your profile details are missing. Please update your profile."}
+
+    try:
+        # Extract all details from Redis (decode from bytes to strings)
+        user_profile = {k.decode("utf-8"): v.decode("utf-8") for k, v in personal_details.items()}
+        preferences_data = {k.decode("utf-8"): v.decode("utf-8") for k, v in preferences.items()}
+        health_data = {k.decode("utf-8"): v.decode("utf-8") for k, v in health_conditions.items()}
+
+        # Essential details
+        name = user_profile.get("name", "User")
+        weight = float(user_profile.get("weight", 0))
+        height = float(user_profile.get("height", 0))
+        dob = user_profile.get("date_of_birth", "")
+        gender = user_profile.get("gender", "Unknown")
+
+        # Calculate additional health metrics
+        age = health_metrics.calculate_age(dob)
+        bmi = health_metrics.calculate_bmi(weight, height)
+        bmr = health_metrics.calculate_bmr(weight, height, age, gender)
+        bfp = health_metrics.calculate_bfp_from_bmi(bmi, age, gender)
+        lbm = health_metrics.calculate_lbm(weight, height, gender)
+        metabolicage = health_metrics.calculate_metabolic_age(bmr, age)
+        musclemass = health_metrics.calculate_muscle_mass(weight, bfp) 
+        proteinintake = health_metrics.calculate_protein_intake(weight, activity_level=preferences_data.get("activity_level", "sedentary")) 
+        maxheartrate = health_metrics.calculate_max_heart_rate(age)
+        hydration = health_metrics.hydration_level(weight, activity_level=preferences_data.get("activity_level", "sedentary"))
+
+    except KeyError:
+        return {"bot_response": "Some details are missing in your profile. Please update your weight, height, date of birth, and gender."}
+
+    # Fetch last 5 chat messages for context
+    chat_history = await redis_client.lrange(f"chat_history:{user_email}", -5, -1)
+    chat_context = "\n".join(chat_history)
+
+    # **Construct a Concise Prompt**
+    prompt = f"""
+    User Query: {user_message}
+    
+    User Details:
+    - Age: {age} years
+    - Weight: {weight} kg
+    - Height: {height} cm
+    - Gender: {gender}
+    
+    Previous Context:
+    {chat_context}
+    
+    Bot:
+    """
+
+    # Generate response using TinyLlama
+    response = ollama.chat(model="tinyllama", messages=[{"role": "user", "content": prompt}])["message"]["content"]
+
+    # Save latest chat history (for context only)
+    await redis_client.rpush(f"chat_history:{user_email}", user_message)
+    
+    return {"bot_response": response}
+
+async def detect_topic(user_message: str) -> str:
+    """Generate a chat topic based on the first user message."""
+    keywords = ["diet", "weight loss", "exercise", "calories", "hydration"]
+    for word in keywords:
+        if word in user_message.lower():
+            return word.capitalize()
+    return f"Chat-{uuid.uuid4().hex[:6]}"
 
 @app.post("/upload/")
 async def upload_file(file: UploadFile = File(...), session_id: str = Cookie(None)):

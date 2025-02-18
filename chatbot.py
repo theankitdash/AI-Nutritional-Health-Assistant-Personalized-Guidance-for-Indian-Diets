@@ -36,7 +36,7 @@ async def generate_bot_response(user_message: str, session_id: str, redis_client
         bmr = health_metrics.calculate_bmr(weight, height, age, gender)
         bfp = health_metrics.calculate_bfp_from_bmi(bmi, age, gender)
         lbm = health_metrics.calculate_lbm(weight, height, gender)
-        hydration = health_metrics.hydration_level(weight)
+        hydration = health_metrics.hydration_level(weight, activity_level=preferences_data.get("activity_level", "sedentary"))
 
     except KeyError:
         return {"bot_response": "Some details are missing in your profile. Please update your weight, height, date of birth, and gender."}
