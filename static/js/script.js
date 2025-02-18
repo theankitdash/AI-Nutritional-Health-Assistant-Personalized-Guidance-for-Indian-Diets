@@ -155,6 +155,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
+    // Function to toggle PCOS field based on gender
+    function togglePCOSField(gender) {
+        const pcosField = document.getElementById("pcos-field");
+        if (gender === "female") {
+        pcosField.style.display = "block";
+        } else {
+        pcosField.style.display = "none";
+        }
+    }
+
+    // Example: Call togglePCOSField() with user's gender when the modal opens
+    document.addEventListener("DOMContentLoaded", function () {
+        const userGender = document.getElementById('gender'); // Replace this with actual gender value from your database
+        togglePCOSField(userGender);
+    });
+
      // Event to show personal details modal
      personalDetailsBtn.addEventListener('click', () => {
         personalDetailsModal.style.display = 'block';

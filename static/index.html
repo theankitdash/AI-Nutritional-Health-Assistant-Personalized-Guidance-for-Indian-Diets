@@ -87,17 +87,401 @@
     <div class="modal-content">
       <span class="close" id="close-preferences">&times;</span>
       <h2>Preferences</h2>
+
+      <!-- Food Preference -->
       <div class="setting">
         <label>Food Preference:</label>
         <div>
-          <input type="radio" id="veg" name="food-preference" value="veg">
+          <input type="radio" id="veg" name="food-preference" value="Veg">
           <label for="veg">Vegetarian</label>
         </div>
         <div>
-          <input type="radio" id="non-veg" name="food-preference" value="non-veg">
+          <input type="radio" id="non-veg" name="food-preference" value="Non-Veg">
           <label for="non-veg">Non-Vegetarian</label>
         </div>
       </div>
+
+      <!-- Snack Preferences -->
+      <div class="setting">
+        <label>Snack Preferences:</label>
+        <div>
+          <input type="checkbox" id="snack-healthy" value="Healthy">
+          <label for="snack-healthy">Healthy Snacks</label>
+        </div>
+        <div>
+          <input type="checkbox" id="snack-high-protein" value="High-Protein">
+          <label for="snack-high-protein">High-Protein Snacks</label>
+        </div>
+        <div>
+          <input type="checkbox" id="snack-low-calorie" value="Low-Calorie">
+          <label for="snack-low-calorie">Low-Calorie Snacks</label>
+        </div>
+        <div>
+          <input type="checkbox" id="snack-no-snacks" value="No-Snacks">
+          <label for="snack-no-snacks">No Snacks</label>
+        </div>
+      </div>
+
+      <!-- Meal Timings -->
+      <div class="setting">
+        <label>Meal Timings:</label>
+        <div>
+          <input type="checkbox" id="meal-breakfast" value="Breakfast">
+          <label for="meal-breakfast">Breakfast</label>
+        </div>
+        <div>
+          <input type="checkbox" id="meal-lunch" value="Lunch">
+          <label for="meal-lunch">Lunch</label>
+        </div>
+        <div>
+          <input type="checkbox" id="meal-dinner" value="Dinner">
+          <label for="meal-dinner">Dinner</label>
+        </div>
+        <div>
+          <input type="checkbox" id="meal-frequent" value="Frequent-Small-Meals">
+          <label for="meal-frequent">Frequent Small Meals</label>
+        </div>
+      </div>
+
+      <!-- Cheat Day Frequency -->
+      <div class="setting">
+        <label>Cheat Day Frequency:</label>
+        <div>
+          <input type="radio" id="cheat-none" name="cheat-day" value="None">
+          <label for="cheat-none">No Cheat Days</label>
+        </div>
+        <div>
+          <input type="radio" id="cheat-weekly" name="cheat-day" value="Weekly">
+          <label for="cheat-weekly">Weekly</label>
+        </div>
+        <div>
+          <input type="radio" id="cheat-biweekly" name="cheat-day" value="Biweekly">
+          <label for="cheat-biweekly">Biweekly (Every 2 Weeks)</label>
+        </div>
+        <div>
+          <input type="radio" id="cheat-monthly" name="cheat-day" value="Monthly">
+          <label for="cheat-monthly">Monthly</label>
+        </div>
+      </div>
+
+      <!-- Cultural/Regional Preferences -->
+      <div class="setting">
+        <label>Cultural/Regional Food Preferences:</label>
+        <div>
+          <input type="checkbox" id="regional-north-indian" value="North Indian">
+          <label for="regional-north-indian">North Indian</label>
+        </div>
+        <div>
+          <input type="checkbox" id="regional-south-indian" value="South Indian">
+          <label for="regional-south-indian">South Indian</label>
+        </div>
+        <div>
+          <input type="checkbox" id="regional-east-indian" value="East Indian">
+          <label for="regional-east-indian">East Indian</label>
+        </div>
+        <div>
+          <input type="checkbox" id="regional-west-indian" value="West Indian">
+          <label for="regional-west-indian">West Indian</label>
+        </div>
+        <div>
+          <input type="checkbox" id="regional-global" value="Global">
+          <label for="regional-global">Global Cuisine</label>
+        </div>
+      </div>
+
+      <!-- Preferred Ingredients or Superfoods -->
+      <div class="setting">
+        <label>Preferred Ingredients / Superfoods:</label>
+        <div>
+          <input type="checkbox" id="ingredient-quinoa" value="Quinoa">
+          <label for="ingredient-quinoa">Quinoa</label>
+        </div>
+        <div>
+          <input type="checkbox" id="ingredient-flax-seeds" value="Flax Seeds">
+          <label for="ingredient-flax-seeds">Flax Seeds</label>
+        </div>
+        <div>
+          <input type="checkbox" id="ingredient-chia-seeds" value="Chia Seeds">
+          <label for="ingredient-chia-seeds">Chia Seeds</label>
+        </div>
+        <div>
+          <input type="checkbox" id="ingredient-almonds" value="Almonds">
+          <label for="ingredient-almonds">Almonds</label>
+        </div>
+        <div>
+          <input type="checkbox" id="ingredient-moringa" value="Moringa">
+          <label for="ingredient-moringa">Moringa</label>
+        </div>
+        <div>
+          <input type="checkbox" id="ingredient-ghee" value="Ghee">
+          <label for="ingredient-ghee">Ghee</label>
+        </div>
+      </div>
+
+      <!-- Cuisine Preferences -->
+      <div class="setting">
+        <label>Cuisine Preferences:</label>
+        <div>
+          <input type="checkbox" id="cuisine-indian" value="Indian">
+          <label for="cuisine-indian">Indian</label>
+        </div>
+        <div>
+          <input type="checkbox" id="cuisine-continental" value="Continental">
+          <label for="cuisine-continental">Continental</label>
+        </div>
+        <div>
+          <input type="checkbox" id="cuisine-mediterranean" value="Mediterranean">
+          <label for="cuisine-mediterranean">Mediterranean</label>
+        </div>
+        <div>
+          <input type="checkbox" id="cuisine-chinese" value="Chinese">
+          <label for="cuisine-chinese">Chinese</label>
+        </div>
+        <div>
+          <input type="checkbox" id="cuisine-italian" value="Italian">
+          <label for="cuisine-italian">Italian</label>
+        </div>
+        <div>
+          <input type="checkbox" id="cuisine-mexican" value="Mexican">
+          <label for="cuisine-mexican">Mexican</label>
+        </div>
+        <div>
+          <input type="checkbox" id="cuisine-thai" value="Thai">
+          <label for="cuisine-thai">Thai</label>
+        </div>
+        <div>
+          <input type="checkbox" id="cuisine-japanese" value="Japanese">
+          <label for="cuisine-japanese">Japanese</label>
+        </div>
+        <div>
+          <input type="checkbox" id="cuisine-middle-eastern" value="Middle Eastern">
+          <label for="cuisine-middle-eastern">Middle Eastern</label>
+        </div>
+      </div>
+
+      <!-- Eating Habits -->
+      <div class="setting">
+        <label for="spicy-tolerance">Spicy Food Tolerance:</label>
+        <select id="spicy-tolerance">
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+
+      <div class="setting">
+        <label for="meal-type">Preferred Meal Type:</label>
+        <select id="meal-type">
+          <option value="Light">Light</option>
+          <option value="Heavy">Heavy</option>
+        </select>
+      </div>
+
+      <div class="setting">
+        <label for="favorite-meal">Favorite Meal:</label>
+        <select id="favorite-meal">
+          <option value="Breakfast">Breakfast</option>
+          <option value="Lunch">Lunch</option>
+          <option value="Dinner">Dinner</option>
+        </select>
+      </div>
+
+      <!-- Meal Frequency -->
+      <div class="setting">
+        <label>Meal Frequency:</label>
+        <div>
+          <input type="radio" id="meals-2" name="meal-frequency" value="2">
+          <label for="meals-2">2 meals/day</label>
+        </div>
+        <div>
+          <input type="radio" id="meals-3" name="meal-frequency" value="3">
+          <label for="meals-3">3 meals/day</label>
+        </div>
+        <div>
+          <input type="radio" id="meals-5" name="meal-frequency" value="5-6">
+          <label for="meals-5">5-6 small meals</label>
+        </div>
+        <div>
+          <input type="radio" id="meals-if" name="meal-frequency" value="Intermittent Fasting">
+          <label for="meals-if">Intermittent Fasting</label>
+        </div>
+      </div>
+
+      <!-- Sweet Preference -->
+      <div class="setting">
+        <label>Sweet Preference:</label>
+        <div>
+          <input type="radio" id="sweet-none" name="sweet-preference" value="No Sugar">
+          <label for="sweet-none">No Sugar</label>
+        </div>
+        <div>
+          <input type="radio" id="sweet-low" name="sweet-preference" value="Low Sugar">
+          <label for="sweet-low">Low Sugar</label>
+        </div>
+        <div>
+          <input type="radio" id="sweet-regular" name="sweet-preference" value="Regular Sugar">
+          <label for="sweet-regular">Regular Sugar</label>
+        </div>
+      </div>
+
+      <!-- Eating Out Frequency -->
+      <div class="setting">
+        <label>Eating Out Frequency:</label>
+        <div>
+          <input type="radio" id="eat-out-never" name="eating-out" value="Never">
+          <label for="eat-out-never">Never</label>
+        </div>
+        <div>
+          <input type="radio" id="eat-out-rarely" name="eating-out" value="Rarely">
+          <label for="eat-out-rarely">Rarely</label>
+        </div>
+        <div>
+          <input type="radio" id="eat-out-often" name="eating-out" value="Often">
+          <label for="eat-out-often">Often</label>
+        </div>
+      </div>
+
+      <!-- Hydration Level -->
+      <div class="setting">
+        <label for="hydration">Daily Water Intake (L):</label>
+        <input type="number" id="hydration" min="0" step="0.1">
+      </div>
+
+      <div class="setting">
+        <label>Preferred Drinks:</label>
+        <div>
+          <input type="checkbox" id="drink-water" value="Water">
+          <label for="drink-water">Water</label>
+        </div>
+        <div>
+          <input type="checkbox" id="drink-tea" value="Tea">
+          <label for="drink-tea">Tea</label>
+        </div>
+        <div>
+          <input type="checkbox" id="drink-coffee" value="Coffee">
+          <label for="drink-coffee">Coffee</label>
+        </div>
+      </div>
+
+      <!-- Activity Level -->
+      <div class="setting">
+        <label for="activity-level">Activity Level:</label>
+        <select id="activity-level">
+          <option value="Sedentary">Sedentary</option>
+          <option value="Lightly Active">Lightly Active</option>
+          <option value="Moderately Active">Moderately Active</option>
+          <option value="Very Active">Very Active</option>
+        </select>
+      </div>
+
+      <!-- Fitness Goals -->
+      <div class="setting">
+        <label for="fitness-goal">Fitness Goal:</label>
+        <select id="fitness-goal">
+          <option value="Weight Loss">Weight Loss</option>
+          <option value="Muscle Gain">Muscle Gain</option>
+          <option value="Maintenance">Maintenance</option>
+          <option value="General Well-being">General Well-being</option>
+        </select>
+      </div>   
+
+      <!-- Food Restrictions -->
+      <div class="setting">
+        <label>Food Restrictions:</label>
+        <div>
+          <input type="checkbox" id="restriction-nuts" value="Nuts">
+          <label for="restriction-nuts">No Nuts</label>
+        </div>
+        <div>
+          <input type="checkbox" id="restriction-gluten" value="Gluten">
+          <label for="restriction-gluten">Gluten-Free</label>
+        </div>
+        <div>
+          <input type="checkbox" id="restriction-dairy" value="Dairy">
+          <label for="restriction-dairy">No Dairy (Vegan-Friendly)</label>
+        </div>
+        <div>
+          <input type="checkbox" id="restriction-eggs" value="Eggs">
+          <label for="restriction-eggs">No Eggs</label>
+        </div>
+        <div>
+          <input type="checkbox" id="restriction-shellfish" value="Shellfish">
+          <label for="restriction-shellfish">No Shellfish</label>
+        </div>
+        <div>
+          <input type="checkbox" id="restriction-peanuts" value="Peanuts">
+          <label for="restriction-peanuts">No Peanuts</label>
+        </div>
+        <div>
+          <input type="checkbox" id="restriction-low-carb" value="Low-Carb">
+          <label for="restriction-low-carb">Low-Carb</label>
+        </div>
+        <div>
+          <input type="checkbox" id="restriction-low-sodium" value="Low-Sodium">
+          <label for="restriction-low-sodium">Low-Sodium</label>
+        </div>
+        <div>
+          <input type="checkbox" id="restriction-halal" value="Halal">
+          <label for="restriction-halal">Halal</label>
+        </div>
+        <div>
+          <input type="checkbox" id="restriction-kosher" value="Kosher">
+          <label for="restriction-kosher">Kosher</label>
+        </div>
+      </div>
+
+
+      <div class="setting">
+        <label for="caffeine-intake">Caffeine Intake:</label>
+        <select id="caffeine-intake">
+          <option value="None">None</option>
+          <option value="Low">Low</option>
+          <option value="Moderate">Moderate</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+
+      <!-- Sleep Patterns -->
+      <div class="setting">
+        <label for="sleep">Average Sleep (Hours):</label>
+        <input type="number" id="sleep" min="0" step="0.5">
+      </div>
+
+      <div class="setting">
+        <label for="sleep-quality">Sleep Quality:</label>
+        <select id="sleep-quality">
+          <option value="Poor">Poor</option>
+          <option value="Average">Average</option>
+          <option value="Good">Good</option>
+        </select>
+      </div>
+
+      <!-- Supplement Usage -->
+      <div class="setting">
+        <label>Supplement Usage:</label>
+        <div>
+          <input type="checkbox" id="supplement-multivitamin" value="Multivitamin">
+          <label for="supplement-multivitamin">Multivitamin</label>
+        </div>
+        <div>
+          <input type="checkbox" id="supplement-protein" value="Protein">
+          <label for="supplement-protein">Protein</label>
+        </div>
+        <div>
+          <input type="checkbox" id="supplement-other" value="Other">
+          <label for="supplement-other">Other</label>
+        </div>
+      </div>
+
+      <div class="setting">
+        <label for="supplement-frequency">Supplement Frequency:</label>
+        <select id="supplement-frequency">
+          <option value="Daily">Daily</option>
+          <option value="Weekly">Weekly</option>
+          <option value="Occasionally">Occasionally</option>
+        </select>
+      </div>
+
       <button id="save-preferences" type="button">Save Preferences</button>
     </div>
   </div>
@@ -107,9 +491,69 @@
     <div class="modal-content">
       <span class="close" id="close-health-conditions">&times;</span>
       <h2>Health Conditions</h2>
+
       <div class="setting">
         <label for="allergies">Allergies:</label>
         <input type="text" id="allergies" placeholder="Enter any allergies">
+      </div>
+
+      <div class="setting">
+        <label for="diabetes">Diabetes:</label>
+        <select id="diabetes">
+          <option value="none">None</option>
+          <option value="type1">Type 1</option>
+          <option value="type2">Type 2</option>
+        </select>
+      </div>
+  
+      <div class="setting">
+        <label for="hypertension">Hypertension:</label>
+        <select id="hypertension">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+  
+      <div class="setting">
+        <label for="cholesterol">High Cholesterol:</label>
+        <select id="cholesterol">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+  
+      <div class="setting">
+        <label for="thyroid">Thyroid Disorders:</label>
+        <select id="thyroid">
+          <option value="none">None</option>
+          <option value="hypothyroidism">Hypothyroidism</option>
+          <option value="hyperthyroidism">Hyperthyroidism</option>
+        </select>
+      </div>
+  
+      <div class="setting">
+        <label for="lactose-intolerance">Lactose Intolerance:</label>
+        <select id="lactose-intolerance">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+  
+      <div class="setting">
+        <label for="gluten-sensitivity">Gluten Sensitivity:</label>
+        <select id="gluten-sensitivity">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+  
+      <!-- PCOS Field (Visible only if gender is female) -->
+      <div class="setting" id="pcos-field" style="display: none;">
+        <label for="pcos">PCOS/PCOD:</label>
+        <select id="pcos">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
       </div>
       <button id="save-health-conditions" type="button">Save Health Conditions</button>
     </div>
