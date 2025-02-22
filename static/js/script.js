@@ -114,35 +114,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Save preferences
     savePreferencesButton.addEventListener('click', async () => {
         const preferences = {
-            foodPreference: document.querySelector('input[name="food-preference"]:checked')?.value,
-            cuisinePreferences: Array.from(document.querySelectorAll('input[name="cuisine-preference"]:checked')).map(el => el.value),
-            spicyFoodTolerance: document.querySelector('input[name="spicy-food-tolerance"]:checked')?.value,
-            preferredMealType: document.querySelector('input[name="preferred-meal-type"]:checked')?.value,
-            favoriteMeal: document.getElementById('favorite-meal')?.value,
-            mealFrequency: document.getElementById('meal-frequency')?.value,
-            hydrationLevel: document.getElementById('hydration-level')?.value,
-            activityLevel: document.getElementById('activity-level')?.value,
-            fitnessGoal: document.getElementById('fitness-goal')?.value,
-            foodRestrictions: Array.from(document.querySelectorAll('input[name="food-restrictions"]:checked')).map(el => el.value),
-            caffeineIntake: document.getElementById('caffeine-intake')?.value,
-            averageSleep: document.getElementById('average-sleep')?.value,
-            sleepQuality: document.getElementById('sleep-quality')?.value,
-            supplementUsage: document.querySelector('input[name="supplement-usage"]:checked')?.value,
-            supplementFrequency: document.getElementById('supplement-frequency')?.value,
+            foodPreference: document.querySelector('input[name="food-preference"]:checked').value,
             snackPreferences: Array.from(document.querySelectorAll('input[name="snack-preference"]:checked')).map(el => el.value),
             mealTimings: Array.from(document.querySelectorAll('input[name="meal-timings"]:checked')).map(el => el.value),
-            cheatDayFrequency: document.getElementById('cheat-day-frequency')?.value,
+            cheatDayFrequency: document.querySelector('input[name="cheat-day"]:checked').value,
             culturalPreferences: Array.from(document.querySelectorAll('input[name="cultural-preferences"]:checked')).map(el => el.value),
-            preferredIngredients: Array.from(document.querySelectorAll('input[name="preferred-ingredients"]:checked')).map(el => el.value),
-            sweetPreference: document.querySelector('input[name="sweet-preference"]:checked')?.value,
-            eatingOutFrequency: document.getElementById('eating-out-frequency')?.value,
-            preferredDrinks: Array.from(document.querySelectorAll('input[name="preferred-drinks"]:checked')).map(el => el.value)
+            preferredIngredients: Array.from(document.querySelectorAll('input[name="preferred-superfoods"]:checked')).map(el => el.value),
+            cuisinePreferences: Array.from(document.querySelectorAll('input[name="cuisine-preferences"]:checked')).map(el => el.value),
+            spicyFoodTolerance: document.getElementById('spicy-tolerance').value,
+            preferredMealType: document.getElementById('meal-type').value,
+            favoriteMeal: document.getElementById('favorite-meal').value,
+            mealFrequency: document.querySelector('input[name="meal-frequency"]:checked').value,
+            sweetPreference: document.querySelector('input[name="sweet-preference"]:checked').value,
+            eatingOutFrequency: document.querySelector('input[name="eating-out"]:checked').value,
+            hydrationLevel: document.getElementById('hydration').value,
+            preferredDrinks: Array.from(document.querySelectorAll('input[name="preferred-drinks"]:checked')).map(el => el.value),
+            activityLevel: document.getElementById('activity-level').value,
+            fitnessGoal: document.getElementById('fitness-goal').value,
+            foodRestrictions: Array.from(document.querySelectorAll('input[name="food-restriction"]:checked')).map(el => el.value),
+            caffeineIntake: document.getElementById('caffeine-intake').value,
+            averageSleep: document.getElementById('sleep').value,
+            sleepQuality: document.getElementById('sleep-quality').value,
+            supplementUsage: Array.from(document.querySelector('input[name="supplement-usage"]:checked')).map(el => el.value),
+            supplementFrequency: document.getElementById('supplement-frequency').value 
         };
 
         if (preferences) {
             try {
             await fetchData('/preferences', "POST", preferences);
-
                 alert("Preferences saved successfully!");
                 preferencesModal.style.display = 'none';
             } catch (error) {
@@ -167,20 +166,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     saveHealthConditionsButton.addEventListener('click', async () => {
         const healthConditions = {
             allergies: document.getElementById("allergies").value,
-            diabetes: document.getElementById("diabetes").checked,
-            hypertension: document.getElementById("hypertension").checked,
-            cholesterol: document.getElementById("cholesterol").checked,
-            thyroid: document.getElementById("thyroid").checked,
-            kidneyDisease: document.getElementById("kidney-disease").checked,
-            liverDisease: document.getElementById("liver-disease").checked,
-            lactoseIntolerance: document.getElementById("lactose-intolerance").checked,
-            glutensensitivity: document.getElementById("glutensensitivity").checked,
-            pcos: document.getElementById("pcos").checked,
-            anemia: document.getElementById("anemia").checked,
-            osteoporosis: document.getElementById("osteoporosis").checked,
-            ibs: document.getElementById("ibs").checked,
-            gerd: document.getElementById("gerd").checked,
-            gout: document.getElementById("gout").checked,
+            diabetes: document.getElementById("diabetes").value,
+            hypertension: document.getElementById("hypertension").value,
+            cholesterol: document.getElementById("cholesterol").value,
+            thyroid: document.getElementById("thyroid").value,
+            kidneyDisease: document.getElementById("kidney-disease").value,
+            liverDisease: document.getElementById("liver-disease").value,
+            lactoseIntolerance: document.getElementById("lactose-intolerance").value,
+            glutenSensitivity: document.getElementById("gluten-sensitivity").value,
+            pcos: document.getElementById("pcos").value,
+            anemia: document.getElementById("anemia").value,
+            osteoporosis: document.getElementById("osteoporosis").value,
+            ibs: document.getElementById("ibs").value,
+            gerd: document.getElementById("gerd").value,
+            gout: document.getElementById("gout").value,
             otherConditions: document.getElementById("other-conditions").value
         };
 
@@ -207,9 +206,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // Example: Call togglePCOSField() with user's gender when the modal opens
     document.addEventListener("DOMContentLoaded", function () {
-        const userGender = document.getElementById('gender'); // Replace this with actual gender value from your database
+        const userGender = document.getElementById('gender'); 
         togglePCOSField(userGender);
     });
 
@@ -306,88 +304,55 @@ document.addEventListener("DOMContentLoaded", async () => {
             const data = await fetchData("/preferences", "GET");
             console.log("Fetched Preferences:", data);
 
-            // Set the food preference
-            document.querySelector(`input[name="food-preference"][value="${data.food_preference}"]`).checked = true;
+            document.querySelector(`input[name="food-preference"][value="${data.foodPreference}"]`).checked = true;
 
-            // Set cuisine preferences (multiple checkboxes)
-            data.cuisine_preferences.split(',').forEach(value => 
-                document.querySelector(`input[name="cuisine-preference"][value="${value}"]`).checked = true
-            );
-
-            // Set spicy food tolerance
-            document.querySelector(`input[name="spicy-food-tolerance"][value="${data.spicy_food_tolerance}"]`).checked = true;
-
-            // Set preferred meal type
-            document.querySelector(`input[name="preferred-meal-type"][value="${data.preferred_meal_type}"]`).checked = true;
-
-            // Set favorite meal
-            document.getElementById('favorite-meal').value = data.favorite_meal;
-
-            // Set meal frequency
-            document.getElementById('meal-frequency').value = data.meal_frequency;
-
-            // Set hydration level
-            document.getElementById('hydration-level').value = data.hydration_level;
-
-            // Set activity level
-            document.getElementById('activity-level').value = data.activity_level;
-
-            // Set fitness goal
-            document.getElementById('fitness-goal').value = data.fitness_goal;
-
-            // Set food restrictions (multiple checkboxes)
-            data.food_restrictions.split(',').forEach(value => 
-                document.querySelector(`input[name="food-restrictions"][value="${value}"]`).checked = true
-            );
-
-            // Set caffeine intake
-            document.getElementById('caffeine-intake').value = data.caffeine_intake;
-
-            // Set average sleep
-            document.getElementById('average-sleep').value = data.average_sleep;
-
-            // Set sleep quality
-            document.getElementById('sleep-quality').value = data.sleep_quality;
-
-            // Set supplement usage
-            document.querySelector(`input[name="supplement-usage"][value="${data.supplement_usage}"]`).checked = true;
-
-            // Set supplement frequency
-            document.getElementById('supplement-frequency').value = data.supplement_frequency;
-
-            // Set snack preferences (multiple checkboxes)
-            data.snack_preferences.split(',').forEach(value => 
+            data.snackPreferences.split(',').forEach(value => 
                 document.querySelector(`input[name="snack-preference"][value="${value}"]`).checked = true
             );
 
-            // Set meal timings (multiple checkboxes)
-            data.meal_timings.split(',').forEach(value => 
+            data.mealTimings.split(',').forEach(value => 
                 document.querySelector(`input[name="meal-timings"][value="${value}"]`).checked = true
             );
 
-            // Set cheat day frequency
-            document.getElementById('cheat-day-frequency').value = data.cheat_day_frequency;
+            document.getElementById('cheat-day').value = data.cheatDayFrequency;
 
-            // Set cultural preferences (multiple checkboxes)
-            data.cultural_preferences.split(',').forEach(value => 
+            data.culturalPreferences.split(',').forEach(value => 
                 document.querySelector(`input[name="cultural-preferences"][value="${value}"]`).checked = true
             );
 
-            // Set preferred ingredients (multiple checkboxes)
-            data.preferred_ingredients.split(',').forEach(value => 
-                document.querySelector(`input[name="preferred-ingredients"][value="${value}"]`).checked = true
+            data.preferredIngredients.split(',').forEach(value => 
+                document.querySelector(`input[name="preferred-superfoods"][value="${value}"]`).checked = true
             );
 
-            // Set sweet preference
-            document.querySelector(`input[name="sweet-preference"][value="${data.sweet_preference}"]`).checked = true;
+            data.cuisinePreferences.split(',').forEach(value => 
+                document.querySelector(`input[name="cuisine-preferences"][value="${value}"]`).checked = true
+            );
+            document.querySelector(`input[name="spicy-tolerance"][value="${data.spicyFoodTolerance}"]`).checked = true;
+            document.querySelector(`input[name="meal-type"][value="${data.preferredMealType}"]`).checked = true;
+            document.getElementById('favorite-meal').value = data.favoriteMeal;
+            document.querySelector(`input[name="meal-frequency"][value = "${data.mealFrequency}"]`).checked = true;
+            document.querySelector(`input[name="sweet-preference"][value="${data.sweetPreference}"]`).checked = true;
+            document.getElementById('eating-out').value = data.eatingOutFrequency;
+            document.getElementById('hydration').value = data.hydrationLevel;
 
-            // Set eating out frequency
-            document.getElementById('eating-out-frequency').value = data.eating_out_frequency;
-
-            // Set preferred drinks (multiple checkboxes)
-            data.preferred_drinks.split(',').forEach(value => 
+            data.preferredDrinks.split(',').forEach(value => 
                 document.querySelector(`input[name="preferred-drinks"][value="${value}"]`).checked = true
             );
+            document.getElementById('activity-level').value = data.activityLevel;
+            document.getElementById('fitness-goal').value = data.fitnessGoal;
+
+            data.foodRestrictions.split(',').forEach(value => 
+                document.querySelector(`input[name="food-restriction"][value="${value}"]`).checked = true
+            );
+            document.getElementById('caffeine-intake').value = data.caffeineIntake;
+            document.getElementById('sleep').value = data.averageSleep;
+            document.getElementById('sleep-quality').value = data.sleepQuality;
+
+            data.supplementUsage.split(',').forEach(value => 
+                document.querySelector(`input[name="supplement-usage"][value="${value}"]`).checked = true
+            );
+
+            document.getElementById('supplement-frequency').value = data.supplementFrequency;
 
         } catch (error) {
             alert(`Error fetching preferences: ${error.message}`);
@@ -400,23 +365,23 @@ document.addEventListener("DOMContentLoaded", async () => {
             const data = await fetchData("/health-conditions", "GET");
             console.log("Fetched Health Conditions:", data);
             // Set allergies data
-            document.getElementById("allergies").value = data.allergies || '';
-            document.getElementById("diabetes").checked = !!data.diabetes;
-            document.getElementById("hypertension").checked = !!data.hypertension;
-            document.getElementById("cholesterol").checked = !!data.cholesterol;
-            document.getElementById("thyroid").checked = !!data.thyroid;
-            document.getElementById("kidney-disease").checked = !!data.kidneyDisease;
-            document.getElementById("liver-disease").checked = !!data.liverDisease;
-            document.getElementById("lactose-intolerance").checked = !!data.lactoseIntolerance;
-            document.getElementById("glutensensitivity").checked = !!data.glutensensitivity;
-            document.getElementById("pcos").checked = !!data.pcos;
-            document.getElementById("anemia").checked = !!data.anemia;
-            document.getElementById("osteoporosis").checked = !!data.osteoporosis;
-            document.getElementById("ibs").checked = !!data.ibs;
-            document.getElementById("gerd").checked = !!data.gerd;
-            document.getElementById("gout").checked = !!data.gout;
+            document.getElementById("allergies").value = data.allergies || null;
+            document.getElementById("diabetes").value = data.diabetes;
+            document.getElementById("hypertension").value = data.hypertension;
+            document.getElementById("cholesterol").value = data.cholesterol;
+            document.getElementById("thyroid").value = data.thyroid;
+            document.getElementById("kidney-disease").value = data.kidneyDisease;
+            document.getElementById("liver-disease").value = data.liverDisease;
+            document.getElementById("lactose-intolerance").value = data.lactoseIntolerance;
+            document.getElementById("gluten-sensitivity").value = data.glutenSensitivity;
+            document.getElementById("pcos").value = data.pcos;
+            document.getElementById("anemia").value = data.anemia;
+            document.getElementById("osteoporosis").value = data.osteoporosis;
+            document.getElementById("ibs").value = data.ibs;
+            document.getElementById("gerd").value = data.gerd;
+            document.getElementById("gout").value = data.gout;
             // Set other conditions text
-            document.getElementById("other-conditions").value = data.other_conditions || '';
+            document.getElementById("other-conditions").value = data.otherConditions || null;
 
         } catch (error) {
             alert(`Error fetching health conditions: ${error.message}`);
