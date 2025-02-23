@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException, Cookie, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
+from typing import List
 import aioredis
 import bcrypt
 import magic  
@@ -52,11 +53,11 @@ class Message(BaseModel):
 
 class Preferences(BaseModel):
     foodPreference: str 
-    snackPreferences: str
-    mealTimings: str
+    snackPreferences: str 
+    mealTimings: str 
     cheatDayFrequency: str
-    culturalPreferences: str
-    preferredIngredients: str
+    culturalPreferences: str 
+    preferredIngredients: str 
     cuisinePreferences: str
     spicyFoodTolerance: str
     preferredMealType: str
@@ -64,13 +65,13 @@ class Preferences(BaseModel):
     mealFrequency: str
     sweetPreference: str
     eatingOutFrequency: str
-    hydrationLevel: str
+    hydrationLevel: float
     preferredDrinks: str
     activityLevel: str
     fitnessGoal: str
     foodRestrictions: str
     caffeineIntake: str
-    averageSleep: str
+    averageSleep: float
     sleepQuality: str
     supplementUsage: str
     supplementFrequency: str     
@@ -161,7 +162,6 @@ async def add_preferences(preferences: Preferences, session_id: str = Cookie(Non
         raise HTTPException(status_code=403, detail="Invalid session.")
     
     await redis_client.hset(f"preferences:{email.decode('utf-8')}", mapping=preferences.model_dump())
-    print("Received Preferences:", preferences)
     return {"message": "Food preferences saved successfully."}
 
 @app.post("/health-conditions/")

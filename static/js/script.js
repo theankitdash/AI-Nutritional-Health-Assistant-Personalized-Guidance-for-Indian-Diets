@@ -115,33 +115,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     savePreferencesButton.addEventListener('click', async () => {
         const preferences = {
             foodPreference: document.querySelector('input[name="food-preference"]:checked').value,
-            snackPreferences: Array.from(document.querySelectorAll('input[name="snack-preference"]:checked')).map(el => el.value),
-            mealTimings: Array.from(document.querySelectorAll('input[name="meal-timings"]:checked')).map(el => el.value),
+            snackPreferences: Array.from(document.querySelectorAll('input[name="snack-preference"]:checked')).map(el => el.value).join(", "),
+            mealTimings: Array.from(document.querySelectorAll('input[name="meal-timings"]:checked')).map(el => el.value).join(", "),
             cheatDayFrequency: document.querySelector('input[name="cheat-day"]:checked').value,
-            culturalPreferences: Array.from(document.querySelectorAll('input[name="cultural-preferences"]:checked')).map(el => el.value),
-            preferredIngredients: Array.from(document.querySelectorAll('input[name="preferred-superfoods"]:checked')).map(el => el.value),
-            cuisinePreferences: Array.from(document.querySelectorAll('input[name="cuisine-preferences"]:checked')).map(el => el.value),
-            spicyFoodTolerance: document.getElementById('spicy-tolerance').value,
-            preferredMealType: document.getElementById('meal-type').value,
-            favoriteMeal: document.getElementById('favorite-meal').value,
+            culturalPreferences: Array.from(document.querySelectorAll('input[name="cultural-preferences"]:checked')).map(el => el.value).join(", "),
+            preferredIngredients: Array.from(document.querySelectorAll('input[name="preferred-superfoods"]:checked')).map(el => el.value).join(", "),
+            cuisinePreferences: Array.from(document.querySelectorAll('input[name="cuisine-preferences"]:checked')).map(el => el.value).join(", "),
+            spicyFoodTolerance: document.getElementById("spicy-tolerance").value,
+            preferredMealType: document.getElementById("meal-type").value,
+            favoriteMeal: document.getElementById("favorite-meal").value,
             mealFrequency: document.querySelector('input[name="meal-frequency"]:checked').value,
             sweetPreference: document.querySelector('input[name="sweet-preference"]:checked').value,
             eatingOutFrequency: document.querySelector('input[name="eating-out"]:checked').value,
-            hydrationLevel: document.getElementById('hydration').value,
-            preferredDrinks: Array.from(document.querySelectorAll('input[name="preferred-drinks"]:checked')).map(el => el.value),
-            activityLevel: document.getElementById('activity-level').value,
-            fitnessGoal: document.getElementById('fitness-goal').value,
-            foodRestrictions: Array.from(document.querySelectorAll('input[name="food-restriction"]:checked')).map(el => el.value),
-            caffeineIntake: document.getElementById('caffeine-intake').value,
-            averageSleep: document.getElementById('sleep').value,
-            sleepQuality: document.getElementById('sleep-quality').value,
-            supplementUsage: Array.from(document.querySelector('input[name="supplement-usage"]:checked')).map(el => el.value),
-            supplementFrequency: document.getElementById('supplement-frequency').value 
+            hydrationLevel: parseFloat(document.getElementById("hydration").value),
+            preferredDrinks: Array.from(document.querySelectorAll('input[name="preferred-drinks"]:checked')).map(el => el.value).join(", "),
+            activityLevel: document.getElementById("activity-level").value,
+            fitnessGoal: document.getElementById("fitness-goal").value,
+            foodRestrictions: Array.from(document.querySelectorAll('input[name="food-restriction"]:checked')).map(el => el.value).join(", "),
+            caffeineIntake: document.getElementById("caffeine-intake").value,
+            averageSleep: parseFloat(document.getElementById("sleep").value),
+            sleepQuality: document.getElementById("sleep-quality").value,
+            supplementUsage: Array.from(document.querySelectorAll('input[name="supplement-usage"]:checked')).map(el => el.value).join(", "),
+            supplementFrequency: document.getElementById("supplement-frequency").value 
         };
 
         if (preferences) {
             try {
-            await fetchData('/preferences', "POST", preferences);
+                await fetchData('/preferences', "POST", preferences);
                 alert("Preferences saved successfully!");
                 preferencesModal.style.display = 'none';
             } catch (error) {
@@ -306,53 +306,55 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             document.querySelector(`input[name="food-preference"][value="${data.foodPreference}"]`).checked = true;
 
-            data.snackPreferences.split(',').forEach(value => 
+            data.snackPreferences.split(', ').forEach(value => 
                 document.querySelector(`input[name="snack-preference"][value="${value}"]`).checked = true
             );
 
-            data.mealTimings.split(',').forEach(value => 
+            data.mealTimings.split(', ').forEach(value => 
                 document.querySelector(`input[name="meal-timings"][value="${value}"]`).checked = true
             );
 
-            document.getElementById('cheat-day').value = data.cheatDayFrequency;
+            document.querySelector(`input[name="cheat-day"][value="${data.cheatDayFrequency}"]`).checked = true;
 
-            data.culturalPreferences.split(',').forEach(value => 
+            data.culturalPreferences.split(', ').forEach(value => 
                 document.querySelector(`input[name="cultural-preferences"][value="${value}"]`).checked = true
             );
 
-            data.preferredIngredients.split(',').forEach(value => 
+            data.preferredIngredients.split(', ').forEach(value => 
                 document.querySelector(`input[name="preferred-superfoods"][value="${value}"]`).checked = true
             );
 
-            data.cuisinePreferences.split(',').forEach(value => 
+            data.cuisinePreferences.split(', ').forEach(value => 
                 document.querySelector(`input[name="cuisine-preferences"][value="${value}"]`).checked = true
             );
-            document.querySelector(`input[name="spicy-tolerance"][value="${data.spicyFoodTolerance}"]`).checked = true;
-            document.querySelector(`input[name="meal-type"][value="${data.preferredMealType}"]`).checked = true;
-            document.getElementById('favorite-meal').value = data.favoriteMeal;
+            document.getElementById("spicy-tolerance").value=data.spicyFoodTolerance;
+            document.getElementById("meal-type").value=data.preferredMealType;
+            document.getElementById("favorite-meal").value = data.favoriteMeal;
+
             document.querySelector(`input[name="meal-frequency"][value = "${data.mealFrequency}"]`).checked = true;
             document.querySelector(`input[name="sweet-preference"][value="${data.sweetPreference}"]`).checked = true;
-            document.getElementById('eating-out').value = data.eatingOutFrequency;
-            document.getElementById('hydration').value = data.hydrationLevel;
 
-            data.preferredDrinks.split(',').forEach(value => 
+            document.querySelector(`input[name="eating-out"][value = "${data.eatingOutFrequency}"]`).checked = true;
+            document.getElementById("hydration").value = data.hydrationLevel;
+
+            data.preferredDrinks.split(', ').forEach(value => 
                 document.querySelector(`input[name="preferred-drinks"][value="${value}"]`).checked = true
             );
-            document.getElementById('activity-level').value = data.activityLevel;
-            document.getElementById('fitness-goal').value = data.fitnessGoal;
+            document.getElementById("activity-level").value = data.activityLevel;
+            document.getElementById("fitness-goal").value = data.fitnessGoal;
 
-            data.foodRestrictions.split(',').forEach(value => 
+            data.foodRestrictions.split(', ').forEach(value => 
                 document.querySelector(`input[name="food-restriction"][value="${value}"]`).checked = true
             );
-            document.getElementById('caffeine-intake').value = data.caffeineIntake;
-            document.getElementById('sleep').value = data.averageSleep;
-            document.getElementById('sleep-quality').value = data.sleepQuality;
+            document.getElementById("caffeine-intake").value = data.caffeineIntake;
+            document.getElementById("sleep").value = data.averageSleep;
+            document.getElementById("sleep-quality").value = data.sleepQuality;
 
-            data.supplementUsage.split(',').forEach(value => 
+            data.supplementUsage.split(', ').forEach(value => 
                 document.querySelector(`input[name="supplement-usage"][value="${value}"]`).checked = true
             );
 
-            document.getElementById('supplement-frequency').value = data.supplementFrequency;
+            document.getElementById("supplement-frequency").value = data.supplementFrequency;
 
         } catch (error) {
             alert(`Error fetching preferences: ${error.message}`);
