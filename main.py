@@ -332,7 +332,7 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     protein_absorption = health_metrics.calculate_protein_absorption(protein_intake, preferences_data.foodPreference)   # to be updated later
     metabolic_flexibility = health_metrics.calculate_metabolic_flexibility(preferences_data.activityLevel, preferences_data.foodPreference) # to be updated later
     electrolyte_balance = health_metrics.calculate_electrolyte_balance(sodium, potassium, magnesium, calcium)
-    
+     
     #Wellness and Lifestyle
     sleep_score = health_metrics.calculate_sleep_score(preferences_data.averageSleep, preferences_data.sleepQuality)
 

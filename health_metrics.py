@@ -44,7 +44,7 @@ def calculate_tdee(bmr: float, activity_level: str ) -> float:
     return round(tdee,2)
 
 # Body Fat Percentage (BFP)
-def calculate_bfp(bmi: float, age: int, gender: str) -> dict:
+def calculate_bfp(bmi: float, age: int, gender: str) -> float:
 
     gender = gender.lower()
     
@@ -60,7 +60,7 @@ def calculate_bfp(bmi: float, age: int, gender: str) -> dict:
     return round(bfp, 2)
 
 # Lean Body Mass
-def calculate_lbm(weight: float, bfp: float) -> dict:
+def calculate_lbm(weight: float, bfp: float) -> float:
     
     lbm = weight * (1 - (bfp / 100))
 
@@ -75,19 +75,19 @@ def calculate_muscle_mass(lbm: float) -> float:
 
 
 # Visceral Fat
-def calculate_visceral_fat(bfp: float, waist: float, height: float) -> dict:
+def calculate_visceral_fat(bfp: float, waist: float, height: float) -> float:
     
     visceral_fat = ((waist / height) * 10) + (bfp / 10)
     return round(visceral_fat, 2)
 
 # Waist-to-Height Ratio (WHtR)
-def calculate_whtr(waist: float, height: float) -> dict:
+def calculate_whtr(waist: float, height: float) -> float:
     
     wht_ratio = waist / height
     return round(wht_ratio, 2)
 
 # Metabolic Age
-def calculate_metabolic_age(lbm: float, bmr: float, age: int) -> dict:
+def calculate_metabolic_age(lbm: float, bmr: float, age: int) -> float:
 
     avg_bmr = (21.6 * lbm) + 370  
 
@@ -97,7 +97,7 @@ def calculate_metabolic_age(lbm: float, bmr: float, age: int) -> dict:
     return round(metabolic_age, 2)
 
 # Hydration Level
-def calculate_hydration_level(weight: float, height: float, gender: str, age: int) -> dict:
+def calculate_hydration_level(weight: float, height: float, gender: str, age: int) -> float:
     
     if gender == "male":
         tbw = (2.447 * weight) + (0.3362 * height) - (0.1074 * age) + 0.09156
@@ -109,7 +109,7 @@ def calculate_hydration_level(weight: float, height: float, gender: str, age: in
     return round(hydration_level, 2)
 
 # Protein Requirement
-def calculate_protein_intake(activity_level: str,  goal: str, lbm: float) -> dict:
+def calculate_protein_intake(activity_level: str,  goal: str, lbm: float) -> float:
 
     activity_factors = {
         "sedentary": 1.2,   # Reduced protein needs for low activity
@@ -372,7 +372,7 @@ def calculate_max_heart_rate(age: int) -> int:
     return 220 - age
 
 # Body Water Percentage (BWP)
-def calculate_body_water_percentage(weight: float, height: float, gender: str, age: int, bfp: float, activity: str, electrolyte: str) -> dict:
+def calculate_body_water_percentage(weight: float, height: float, gender: str, age: int, bfp: float, activity: str, electrolyte: str) -> float:
     
     gender = gender.lower()
     activity = activity.lower()
@@ -452,7 +452,7 @@ def calculate_protein_absorption(protein_intake: float, food: str) -> float:
     return round(efficiency, 2)
 
 # Metabolic Flexibility – Fat vs. Carb Burning
-def calculate_metabolic_flexibility(activity_level: str, diet_type: str) -> dict:
+def calculate_metabolic_flexibility(activity_level: str, diet_type: str) -> float:
 
     # Activity Level Influence
     activity_rer = {
@@ -535,7 +535,7 @@ def calculate_sleep_score(duration: float) -> float:
     return sleep_score
 
 # Daily Fiber Intake – Essential for Digestion & Gut Health
-def daily_fiber_intake(age: int, gender: str, activity_level: str, goal: str) -> float:
+def daily_fiber_intake(age: int, gender: str, activity_level: str, goal: str) -> dict:
 
     gender = gender.lower()
     activity_level = activity_level.lower()
