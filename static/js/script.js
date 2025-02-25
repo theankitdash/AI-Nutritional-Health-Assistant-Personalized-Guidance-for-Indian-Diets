@@ -39,11 +39,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const closeHealthConditionsModal = document.getElementById('close-health-conditions');
     const saveHealthConditionsButton = document.getElementById('save-health-conditions');
 
-    // Chat History modal
-    const chathistoryModal = document.getElementById('chat-history-modal');
-    const chathistoryBtn = document.getElementById('chat-history-btn');
-    const closechathistoryModal = document.getElementById('close-chat-history');
-
     // Check login status on page load
     window.onload = async () => {
         await checkLoginStatus();
