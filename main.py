@@ -3,7 +3,6 @@ from fastapi import FastAPI, HTTPException, Cookie, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
-from typing import List
 import aioredis
 import bcrypt
 import magic  
@@ -35,10 +34,11 @@ redis_client = aioredis.from_url(f"redis://{REDIS_CONFIG['host']}:{REDIS_CONFIG[
 # Pydantic models for personal details and user credentials
 class PersonalDetails(BaseModel):
     name: str
-    date_of_birth: str
+    dateOfBirth: str
     gender: str
     height: float
     weight: float
+    waist: float
 
 class UserCredentials(BaseModel):
     email: EmailStr
@@ -187,17 +187,10 @@ async def get_personal_details(session_id: str = Cookie(None)):
         raise HTTPException(status_code=403, detail="Invalid session.")
     
     result = await redis_client.hgetall(f"personal_details:{email.decode('utf-8')}")
-    if result:
-        return {
-            "email": email.decode('utf-8'),
-            "name": result[b'name'].decode('utf-8'),
-            "date_of_birth": result[b'date_of_birth'].decode('utf-8'),
-            "gender": result[b'gender'].decode('utf-8'),
-            "height": float(result[b'height']),
-            "weight": float(result[b'weight']),
-        }
-    else:
+    if not result:
         raise HTTPException(status_code=404, detail="User not found.")
+    
+    return {key: value for key, value in result.items()}  
     
 @app.get("/preferences/")
 async def get_preferences(session_id: str = Cookie(None)):
@@ -295,49 +288,6 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     personal_details_data = PersonalDetails(**{k.decode(): v.decode() for k, v in personal_details.items()})
     preferences_data = Preferences(**{k.decode("utf-8"): v.decode("utf-8") for k, v in preferences.items()}) if preferences else None
     health_data = HealthConditions(**{k.decode("utf-8"): v.decode("utf-8") for k, v in health_conditions.items()}) if health_conditions else None
-
-    waist = " "
-    # Health Metrics
-    age = health_metrics.calculate_age(personal_details_data.date_of_birth)
-
-    #Body Composition
-    bmi = health_metrics.calculate_bmi(personal_details_data.weight, personal_details_data.height)
-    bmr = health_metrics.calculate_bmr(personal_details_data.weight, personal_details_data.height, age, personal_details_data.gender)
-    tdee = health_metrics.calculate_tdee(bmr, preferences_data.activityLevel)
-    bfp = health_metrics.calculate_bfp(bmi, age, personal_details_data.gender)
-    lbm = health_metrics.calculate_lbm(personal_details_data.weight, bfp)
-    muscle_mass = health_metrics.calculate_muscle_mass(lbm)
-    visceral_fat = health_metrics.calculate_visceral_fat(bfp, waist, age, personal_details_data.height)
-    whr = health_metrics.calculate_whtr(waist, personal_details_data.height)
-    metabolic_age = health_metrics.calculate_metabolic_age(lbm, bmr, age)
- 
-    #Hydration and Nutrition
-    hydration_level = health_metrics.calculate_hydration_level(personal_details_data.weight, personal_details_data.height, personal_details_data.gender, age)
-    protein_intake = health_metrics.calculate_protein_intake(preferences_data.activityLevel,preferences_data.fitnessGoal, lbm)
-    macro_nutrients = health_metrics.calculate_macronutrients(tdee, preferences_data.fitnessGoal, personal_details_data.gender)
-    micro_nutrients = health_metrics.calculate_micronutrients(preferences_data.fitnessGoal, age, personal_details_data.gender, preferences_data.activityLevel)
-    
-    # Energy balance
-    energy_surplus_deficit = health_metrics.calculate_energy_surplus_deficit(tdee, preferences_data.fitnessGoal)
-    glycemic_index = health_metrics.glycemic_index_load(preferences_data.foodPreference) # to be updated later
-    bmd = health_metrics.calculate_bmd(personal_details_data.weight, personal_details_data.height, age, personal_details_data.gender)
-    
-    #Heart
-    resting_hr = health_metrics.calculate_resting_heart_rate(age)
-    max_heart_rate = health_metrics.calculate_max_heart_rate(age)
-
-    #Advanced nutrition
-    body_water_percentage = health_metrics.calculate_body_water_percentage(personal_details_data.weight, personal_details_data.height, personal_details_data.gender, age, bfp, preferences_data.activityLeve, electrolyte_balance)
-    skeletal_mass = health_metrics.calculate_skeletal_muscle_mass(lbm)
-    protein_absorption = health_metrics.calculate_protein_absorption(protein_intake, preferences_data.foodPreference)   # to be updated later
-    metabolic_flexibility = health_metrics.calculate_metabolic_flexibility(preferences_data.activityLevel, preferences_data.foodPreference) # to be updated later
-    electrolyte_balance = health_metrics.calculate_electrolyte_balance(sodium, potassium, magnesium, calcium)
-     
-    #Wellness and Lifestyle
-    sleep_score = health_metrics.calculate_sleep_score(preferences_data.averageSleep, preferences_data.sleepQuality)
-
-    #Performance
-    fiber = health_metrics.daily_fiber_intake(age, personal_details_data.gender, preferences_data.activityLevel, preferences_data.fitnessGoal)
 
     
     # Detect or create a chat topic

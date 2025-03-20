@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (preferences) {
             try {
-                await fetchData('/preferences', "POST", preferences);
+                await fetchData("/preferences", "POST", preferences);
                 alert("Preferences saved successfully!");
                 preferencesModal.style.display = 'none';
             } catch (error) {
@@ -180,14 +180,48 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (healthConditions) {
             try {
-                await fetchData('/health-conditions', "POST", healthConditions);
+                await fetchData("/health-conditions", "POST", healthConditions);
                 alert("Health conditions saved successfully!");
                 healthConditionsModal.style.display = 'none';
             } catch (error) {
                 alert("Error saving health conditions:", error);
             }
         } else {
-            alert("Please update all the health conditions.");
+            alert("Please fill all the health conditions.");
+        }
+    });
+
+     // Event to show personal details modal
+     personalDetailsBtn.addEventListener('click', () => {
+        personalDetailsModal.style.display = 'block';
+    });
+
+    // Event to close personal details modal
+    closePersonalDetailsModal.addEventListener('click', () => {
+        personalDetailsModal.style.display = 'none';
+    });
+
+    // Event to save personal details
+    savePersonalDetailsBtn.addEventListener('click', async () => {
+        const personalDetails = {
+            name: document.getElementById("name").value,
+            dateOfBirth: document.getElementById("dateOfBirth").value,
+            gender: document.getElementById("gender").value,
+            height: parseFloat(document.getElementById("height").value),
+            weight: parseFloat(document.getElementById("weight").value),
+            waist: parseFloat(document.getElementById("waist").value)
+        };
+
+        if (personalDetails) {
+            try {
+                await fetchData("/personal-details", "POST", personalDetails);
+                alert("Profile saved successfully!");
+                personalDetailsModal.style.display = 'none';
+            } catch (error) {
+                alert(`Error saving profile: ${error.message}`);
+            }
+        } else {
+            alert("Please fill all the personal details.");
         }
     });
 
@@ -204,38 +238,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener("DOMContentLoaded", function () {
         const userGender = document.getElementById('gender'); 
         togglePCOSField(userGender);
-    });
-
-     // Event to show personal details modal
-     personalDetailsBtn.addEventListener('click', () => {
-        personalDetailsModal.style.display = 'block';
-    });
-
-    // Event to close personal details modal
-    closePersonalDetailsModal.addEventListener('click', () => {
-        personalDetailsModal.style.display = 'none';
-    });
-
-    // Event to save personal details
-    savePersonalDetailsBtn.addEventListener('click', async () => {
-        const name = document.getElementById("name").value;
-        const dateOfBirth = document.getElementById("dateOfBirth").value;
-        const gender = document.getElementById("gender").value;
-        const height = parseFloat(document.getElementById("height").value);
-        const weight = parseFloat(document.getElementById("weight").value);
-
-        if (!name || !dateOfBirth || !gender || isNaN(height) || height <= 0 || isNaN(weight) || weight <= 0) {
-            alert("Please fill all fields correctly.");
-            return;
-        }
-
-        try {
-            await fetchData("/personal-details/", "POST", { name, date_of_birth: dateOfBirth, gender, height, weight });
-            alert("Profile saved successfully!");
-            personalDetailsModal.style.display = 'none';
-        } catch (error) {
-            alert(`Error saving profile: ${error.message}`);
-        }
     });
 
     // Event to show account settings modal
@@ -280,14 +282,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Function to fetch personal details
     async function fetchPersonalDetails() {
         try {
-            const data = await fetchData("/personal-details/", "GET");
+            const data = await fetchData("/personal-details", "GET");
             console.log("Fetched Personal Details:", data);
             document.getElementById("welcome-name").textContent = data.name;
             document.getElementById("name").value = data.name;
-            document.getElementById("dateOfBirth").value = data.date_of_birth;
+            document.getElementById("dateOfBirth").value = data.dateOfBirth;
             document.getElementById("gender").value = data.gender;
             document.getElementById("height").value = data.height;
             document.getElementById("weight").value = data.weight;
+            document.getElementById("waist").value = data.waist;
         } catch (error) {
             alert(`Error: ${error.message}`);
         }

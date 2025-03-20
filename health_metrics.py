@@ -7,7 +7,7 @@ def calculate_age(dob: str) -> int:
     return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
 
 # BMI
-def calculate_bmi(weight: float, height: float, age) -> dict: 
+def calculate_bmi(weight: float, height: float) -> dict: 
     bmi = weight / ((height / 100) ** 2), 2
 
     return round(bmi,2)
