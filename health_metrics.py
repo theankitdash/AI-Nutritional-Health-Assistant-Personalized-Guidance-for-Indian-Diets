@@ -7,10 +7,10 @@ def calculate_age(dob: str) -> int:
     return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
 
 # BMI
-def calculate_bmi(weight: float, height: float) -> dict: 
-    bmi = weight / ((height / 100) ** 2), 2
+def calculate_bmi(weight: float, height: float) -> float: 
+    bmi = round(weight / ((height / 100) ** 2), 2)
 
-    return round(bmi,2)
+    return bmi
 
 # Basal Metabolic Rate (BMR)
 def calculate_bmr(weight: float, height: float, age: int, gender: str) -> float:
@@ -72,7 +72,6 @@ def calculate_muscle_mass(lbm: float) -> float:
     muscle_mass = lbm * 0.50
 
     return round(muscle_mass, 2)
-
 
 # Visceral Fat
 def calculate_visceral_fat(bfp: float, waist: float, height: float) -> float:
@@ -147,7 +146,7 @@ def calculate_macronutrients(tdee: float, goal: str, gender:str) -> dict:
         "weight loss": {"carbs": 0.40, "protein": 0.30, "fats": 0.30},
         "muscle gain": {"carbs": 0.50, "protein": 0.25, "fats": 0.25},
         "maintenance": {"carbs": 0.50, "protein": 0.20, "fats": 0.30},
-        "general wellbeing": {"carbs": 0.45, "protein": 0.25, "fats": 0.30}
+        "general well-being": {"carbs": 0.45, "protein": 0.25, "fats": 0.30}
     }
 
     if goal not in macro_splits:
@@ -263,7 +262,7 @@ def calculate_energy_surplus_deficit(tdee: float, goal: str) -> dict:
         "weight loss": -500,  # Moderate deficit (~0.5 kg/week)
         "muscle gain":  300,  # Moderate surplus (~0.3 kg/week)
         "maintenance":  0,    # No change
-        "general wellbeing":  0  # Keep TDEE as is
+        "general well-being":  0  # Keep TDEE as is
     }
     
     if goal not in energy_adjustments:
@@ -413,7 +412,7 @@ def calculate_body_water_percentage(weight: float, height: float, gender: str, a
     return round(bwp,2)
 
 # Skeletal Muscle Mass (SMM)
-def calculate_skeletal_muscle_mass(lbm: float) -> dict:
+def calculate_skeletal_muscle_mass(lbm: float) -> float:
 
     smm = lbm * 0.52
 
@@ -452,7 +451,7 @@ def calculate_protein_absorption(protein_intake: float, food: str) -> float:
     return round(efficiency, 2)
 
 # Metabolic Flexibility – Fat vs. Carb Burning
-def calculate_metabolic_flexibility(activity_level: str, diet_type: str) -> float:
+def calculate_metabolic_flexibility(activity_level: str, diet_type: str) -> str:
 
     # Activity Level Influence
     activity_rer = {
@@ -495,38 +494,51 @@ def calculate_metabolic_flexibility(activity_level: str, diet_type: str) -> floa
     return mf_score
 
 # Electrolyte Balance – Sodium, Potassium, Magnesium
-def calculate_electrolyte_balance(sodium: float, potassium: float, magnesium: float, calcium: float) -> dict:
+def calculate_electrolyte_balance(age: int, gender: str, activity_level: str, goal: str) -> dict:
 
-    # Recommended Daily Intake (RDI) - Reference values in mg
-    rdi = {"sodium": 2300, "potassium": 4700, "magnesium": 420, "calcium": 1300}
-
-    # Calculate intake percentage
-    sodium_pct = (sodium / rdi["sodium"]) * 100
-    potassium_pct = (potassium / rdi["potassium"]) * 100
-    magnesium_pct = (magnesium / rdi["magnesium"]) * 100
-    calcium_pct = (calcium / rdi["calcium"]) * 100
-
-    # Electrolyte Balance Score (Average of all % intakes)
-    electrolyte_score = (sodium_pct + potassium_pct + magnesium_pct + calcium_pct) / 4
-
-    # Electrolyte Status Classification
-    if electrolyte_score >= 90:
-        status = "Optimal"
-    elif 60 <= electrolyte_score < 90:
-        status = "Moderate Deficiency"
-    elif 40 <= electrolyte_score < 60:
-        status = "Deficient"    
-    else:
-        status = "Severe Deficiency"
-
-    return {
-        "Sodium Intake (%)": round(sodium_pct, 2),
-        "Potassium Intake (%)": round(potassium_pct, 2),
-        "Magnesium Intake (%)": round(magnesium_pct, 2),
-        "Calcium Intake (%)": round(calcium_pct, 2),
-        "Electrolyte Score (%)": round(electrolyte_score, 2),
-        "Electrolyte Status": status
+    # Base Recommended Daily Intake (RDI) in mg
+    rdi_base = {
+        "sodium": 2300, "potassium": 4700, "magnesium": 400, "calcium": 1000
     }
+
+    # Adjust for Age
+    if age < 18:
+        rdi_base = {"sodium": 1800, "potassium": 3600, "magnesium": 320, "calcium": 1300}
+    elif age >= 50:
+        rdi_base["calcium"] = 1200 
+
+    # Adjust for Gender
+    if gender.lower() == "female":
+        rdi_base["magnesium"] = 320  # Women need less magnesium
+        if age >= 50:
+            rdi_base["calcium"] = 1200
+
+    # Adjust for Activity Level
+    activity_multiplier = {
+        "Sedentary": 1.0,         # Little to no exercise
+        "Lightly Active": 1.2,    # Light exercise 1-3 days/week
+        "Moderately Active": 1.4, # Moderate exercise 3-5 days/week
+        "Very Active": 1.6        # Hard exercise 6-7 days/week
+    }
+
+    rdi_base = {nutrient: value * activity_multiplier.get(activity_level, 1.0) for nutrient, value in rdi_base.items()}
+             
+    # Adjust for Health Goals
+    goal_adjustments = {
+        "General Well-being": {},
+        "Weight Loss": {"sodium": 0.8, "potassium": 1.1, "magnesium": 1.2},  # Less sodium, more potassium & magnesium
+        "Muscle Gain": {"sodium": 1.3, "potassium": 1.2, "calcium": 1.3},   # More sodium, potassium & calcium
+        "Maintenance": {}  # No special adjustment
+    }
+    for nutrient, factor in goal_adjustments.get(goal, {}).items():
+        rdi_base[nutrient] *= factor
+
+    # Format Final Output
+    result = {f"Recommended {nutrient.capitalize()} (mg/day)": round(value, 2) for nutrient, value in rdi_base.items()}
+    result["Activity Level"] = activity_level
+    result["Health Goal"] = goal
+
+    return result
 
 # Sleep Quality & Duration Score
 def calculate_sleep_score(duration: float) -> float:
@@ -562,7 +574,7 @@ def daily_fiber_intake(age: int, gender: str, activity_level: str, goal: str) ->
         "weight loss": 5,
         "muscle gain": -2,
         "maintenance": 0,
-        "general wellbeing": 2
+        "general well-being": 2
     }
 
     if activity_level not in activity_adjustment:

@@ -14,6 +14,7 @@ import pdfplumber
 import fitz
 import health_metrics
 import ollama
+import logging
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -94,6 +95,20 @@ class HealthConditions(BaseModel):
     gout: str
     otherConditions: str
 
+class HealthMetrics(BaseModel):
+    age: int
+    bmi: float
+    bmr: float
+    tdee: float
+    bfp: float
+    lbm: float
+    muscle_mass: float
+    visceral_fat: float
+    whr: float
+    metabolic_age: float
+    hydration_level: float
+    protein_intake: float
+    
 class ChatMessage(BaseModel):
     user_message: str
     bot_response: str
@@ -150,6 +165,10 @@ async def add_personal_details(details: PersonalDetails, session_id: str = Cooki
         raise HTTPException(status_code=403, detail="Invalid session.")
 
     await redis_client.hset(f"personal_details:{email.decode('utf-8')}", mapping=details.model_dump())
+
+    # Trigger health metric calculation
+    await calculate_and_store_health_metrics(email.decode('utf-8'))
+
     return {"message": "Personal details added successfully."}
 
 @app.post("/preferences/")
@@ -162,6 +181,10 @@ async def add_preferences(preferences: Preferences, session_id: str = Cookie(Non
         raise HTTPException(status_code=403, detail="Invalid session.")
     
     await redis_client.hset(f"preferences:{email.decode('utf-8')}", mapping=preferences.model_dump())
+
+    # Recalculate health metrics
+    await calculate_and_store_health_metrics(email.decode('utf-8'))
+
     return {"message": "Food preferences saved successfully."}
 
 @app.post("/health-conditions/")
@@ -175,7 +198,63 @@ async def add_health_conditions(health_conditions: HealthConditions, session_id:
     
     await redis_client.hset(f"health_conditions:{email.decode('utf-8')}", mapping=health_conditions.model_dump())
 
+    # Recalculate health metrics
+    await calculate_and_store_health_metrics(email.decode('utf-8'))
+
     return {"message": "Health conditions saved successfully."}
+
+async def calculate_and_store_health_metrics(email: str):
+    # Fetch user details
+    personal_details = await redis_client.hgetall(f"personal_details:{email}")
+    preferences = await redis_client.hgetall(f"preferences:{email}")
+    health_conditions = await redis_client.hgetall(f"health_conditions:{email}")
+
+    if not personal_details or not preferences or not health_conditions:
+        raise HTTPException(status_code=404, detail="User profile is incomplete. Please update all the details.")
+
+    # Decode Redis data
+    personal_details_data = PersonalDetails(**{k.decode(): v.decode() for k, v in personal_details.items()})
+    preferences_data = Preferences(**{k.decode(): v.decode() for k, v in preferences.items()})
+    health_data = HealthConditions(**{k.decode(): v.decode() for k, v in health_conditions.items()})
+
+    # Calculate Health Metrics
+    age = health_metrics.calculate_age(personal_details_data.dateOfBirth)
+    bmi = health_metrics.calculate_bmi(personal_details_data.weight, personal_details_data.height)
+    bmr = health_metrics.calculate_bmr(personal_details_data.weight, personal_details_data.height, age, personal_details_data.gender)
+    tdee = health_metrics.calculate_tdee(bmr, preferences_data.activityLevel)
+    bfp = health_metrics.calculate_bfp(bmi, age, personal_details_data.gender)
+    lbm = health_metrics.calculate_lbm(personal_details_data.weight, bfp)
+    muscle_mass=health_metrics.calculate_muscle_mass(lbm)
+    visceral_fat=health_metrics.calculate_visceral_fat(bfp, personal_details_data.waist, personal_details_data.height)
+    whr=health_metrics.calculate_whtr(personal_details_data.waist, personal_details_data.height)
+    metabolic_age=health_metrics.calculate_metabolic_age(lbm, bmr, age)
+    hydration_level=health_metrics.calculate_hydration_level(personal_details_data.weight, personal_details_data.height, personal_details_data.gender, age)
+    protein_intake=health_metrics.calculate_protein_intake(preferences_data.activityLevel, preferences_data.fitnessGoal, lbm)
+    #macro_nutrients=health_metrics.calculate_macronutrients(tdee, preferences_data.fitnessGoal, personal_details_data.gender)
+    #micro_nutrients=health_metrics.calculate_micronutrients(preferences_data.fitnessGoal, age, personal_details_data.gender, preferences_data.activityLevel)
+    #energy_surplus_deficit=health_metrics.calculate_energy_surplus_deficit(tdee, preferences_data.fitnessGoal)
+    #glycemic_index=health_metrics.glycemic_index_load(preferences_data.foodPreference),  # To be updated later
+    #bmd=health_metrics.calculate_bmd(personal_details_data.weight, personal_details_data.height, age, bfp, personal_details_data.gender)
+    #resting_hr=health_metrics.calculate_resting_heart_rate(age, preferences_data.fitnessGoal)
+    #max_heart_rate=health_metrics.calculate_max_heart_rate(age)
+    #electrolyte_balance=health_metrics.calculate_electrolyte_balance(age, personal_details_data.gender, preferences_data.activityLevel, preferences_data.fitnessGoal)
+    #body_water_percentage=health_metrics.calculate_body_water_percentage(personal_details_data.weight, personal_details_data.height, personal_details_data.gender, age, bfp, preferences_data.activityLevel, electrolyte_balance)
+    #skeletal_mass=health_metrics.calculate_skeletal_muscle_mass(lbm)
+    #protein_absorption=health_metrics.calculate_protein_absorption(health_metrics.calculate_protein_intake, preferences_data.foodPreference),  # To be updated later
+    #metabolic_flexibility=health_metrics.calculate_metabolic_flexibility(preferences_data.activityLevel, preferences_data.foodPreference),  # To be updated later
+    
+    #sleep_score=health_metrics.calculate_sleep_score(preferences_data.averageSleep, preferences_data.sleepQuality)
+    #fiber=health_metrics.daily_fiber_intake(age, personal_details_data.gender, preferences_data.activityLevel, preferences_data.fitnessGoal)
+
+
+    health_metrics_data = HealthMetrics(
+        age=age, bmi=bmi, bmr=bmr, tdee=tdee, bfp=bfp, lbm=lbm, muscle_mass=muscle_mass, visceral_fat=visceral_fat, 
+        whr=whr, metabolic_age=metabolic_age, hydration_level=hydration_level, protein_intake=protein_intake
+        
+           )
+
+    # Store computed health metrics in Redis
+    await redis_client.hset(f"health_metrics:{email}", mapping=health_metrics_data.model_dump())
 
 @app.get("/personal-details/")
 async def get_personal_details(session_id: str = Cookie(None)):
@@ -281,14 +360,11 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     preferences = await redis_client.hgetall(f"preferences:{email}")
     health_conditions = await redis_client.hgetall(f"health_conditions:{email}")
 
-    if not personal_details or not preferences or not health_conditions:
-        raise HTTPException(status_code=404, detail="User profile is incomplete. Please update all the details.")
-    
+
     # Decode Redis data
     personal_details_data = PersonalDetails(**{k.decode(): v.decode() for k, v in personal_details.items()})
-    preferences_data = Preferences(**{k.decode("utf-8"): v.decode("utf-8") for k, v in preferences.items()}) if preferences else None
-    health_data = HealthConditions(**{k.decode("utf-8"): v.decode("utf-8") for k, v in health_conditions.items()}) if health_conditions else None
-
+    preferences_data = Preferences(**{k.decode(): v.decode() for k, v in preferences.items()})
+    health_data = HealthConditions(**{k.decode(): v.decode() for k, v in health_conditions.items()})
     
     # Detect or create a chat topic
     topic = await redis_client.get(f"{email}:current_topic")
