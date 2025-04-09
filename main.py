@@ -14,7 +14,6 @@ import pdfplumber
 import fitz
 import health_metrics
 import ollama
-import logging
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -319,21 +318,9 @@ async def update_password(password_data: PasswordUpdate, session_id: str = Cooki
         return {"message": "Password updated successfully."}
     else:
         raise HTTPException(status_code=401, detail="Current password is incorrect.")
-    
-@app.get("/chat/topics/")
-async def get_chat_topics(session_id: str = Cookie(None)):
-    if not session_id:
-        raise HTTPException(status_code=403, detail="User is not logged in.")
-
-    email = await redis_client.get(f"session:{session_id}")
-    if not email:
-        raise HTTPException(status_code=403, detail="Invalid session.")
-
-    topics = await redis_client.smembers(f"{email}:topics")
-    return {"topics": list(topics)}
 
 @app.get("/chat/history/")
-async def get_chat_history(topic: str, session_id: str = Cookie(None)):
+async def get_chat_history(session_id: str = Cookie(None)):
     if not session_id:
         raise HTTPException(status_code=403, detail="User is not logged in.")
 
@@ -341,8 +328,8 @@ async def get_chat_history(topic: str, session_id: str = Cookie(None)):
     if not email:
         raise HTTPException(status_code=403, detail="Invalid session.")
 
-    history = await redis_client.lrange(f"{email}:chats:{topic}", 0, -1)  # Fetch full history
-    return {"topic": topic, "history": history}
+    history = await redis_client.lrange(f"{email.decode()}:chats", 0, -1)  # Fetch full history
+    return {"history": [entry.decode("utf-8") for entry in history]}
 
 @app.post("/chat/")
 async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
@@ -360,18 +347,10 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     preferences = await redis_client.hgetall(f"preferences:{email}")
     health_conditions = await redis_client.hgetall(f"health_conditions:{email}")
 
-
     # Decode Redis data
     personal_details_data = PersonalDetails(**{k.decode(): v.decode() for k, v in personal_details.items()})
     preferences_data = Preferences(**{k.decode(): v.decode() for k, v in preferences.items()})
     health_data = HealthConditions(**{k.decode(): v.decode() for k, v in health_conditions.items()})
-    
-    # Detect or create a chat topic
-    topic = await redis_client.get(f"{email}:current_topic")
-    if not topic:
-        topic = await detect_topic(message.message)  # Generate a topic
-        await redis_client.set(f"{email}:current_topic", topic)
-        await redis_client.sadd(f"{email}:topics", topic)
     
     # Generate response with structured user details
     response = await generate_bot_response(
@@ -385,7 +364,7 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     
     # Save the full chat history
     chat_entry = f"User: {message.message}\nBot: {response['bot_response']}"
-    await redis_client.rpush(f"{email}:chats:{topic}", chat_entry)
+    await redis_client.rpush(f"{email}:chats", chat_entry)
 
     # Return structured data with the chat message
     return ChatMessage(
@@ -393,21 +372,32 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
         bot_response=response['bot_response']
     )
 
-async def generate_bot_response(user_message: str, personal_details: PersonalDetails, preferences: Preferences, health_conditions: HealthConditions, redis_client, email: str) -> dict:
+async def generate_bot_response(user_message: str, 
+                                personal_details: PersonalDetails, 
+                                preferences: Preferences, 
+                                health_conditions: HealthConditions, 
+                                redis_client, email: str) -> dict:
+    
     """Generate bot response using TinyLlama with health details and past context."""
 
     # Fetch last 5 chat messages for context (only Redis call in this function)
     chat_history = await redis_client.lrange(f"chat_history:{email}", -5, -1)
-    chat_context = "\n".join(chat_history)
+    chat_context = "\n".join([entry.decode("utf-8") for entry in chat_history])
 
     # Construct a concise prompt
     prompt = f"""
-    User Query: {user_message}
-    
-    Previous Context:
+    User Profile:
+    Personal Details: {', '.join([f'{k}: {v}' for k, v in personal_details.dict().items() if v])}
+    Preferences: {', '.join([f'{k}: {v}' for k, v in preferences.dict().items() if v])}
+    Health Conditions: {', '.join([f'{k}: {v}' for k, v in health_conditions.dict().items() if v])}
+
+    Recent Conversation:
     {chat_context}
 
-    Bot:
+    Current Question:
+    {user_message}
+
+    Respond as a nutritional expert tailored to the user's profile:
     """
 
     # Generate response using TinyLlama
@@ -417,14 +407,6 @@ async def generate_bot_response(user_message: str, personal_details: PersonalDet
     await redis_client.rpush(f"chat_history:{email}", user_message)
     
     return {"bot_response": response}
-
-async def detect_topic(user_message: str) -> str:
-    """Generate a chat topic based on the first user message."""
-    keywords = ["diet", "weight loss", "exercise", "calories", "hydration"]
-    for word in keywords:
-        if word in user_message.lower():
-            return word.capitalize()
-    return f"Chat-{uuid.uuid4().hex[:6]}"
 
 @app.post("/upload/")
 async def upload_file(file: UploadFile = File(...), session_id: str = Cookie(None)):
