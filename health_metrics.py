@@ -136,7 +136,7 @@ def calculate_protein_intake(activity_level: str,  goal: str, lbm: float) -> flo
     return round(protein_intake, 2)
 
 # Macronutrient Breakdown
-def calculate_macronutrients(tdee: float, goal: str, gender:str) -> dict:
+def calculate_macronutrients(tdee: float, goal: str, gender:str) -> str:
     
     goal = goal.lower()
     gender = gender.lower()
@@ -168,10 +168,17 @@ def calculate_macronutrients(tdee: float, goal: str, gender:str) -> dict:
     carbs_g = round((macros["carbs"] * tdee) / 4, 2)
     fats_g = round((macros["fats"] * tdee) / 9, 2)
 
-    return {"Protein (g)": protein_g, "Carbohydrates (g)": carbs_g, "Fats (g)": fats_g}
+    result = (
+        f"Macronutrient Breakdown for {goal.title()} ({gender.title()}):\n"
+        f"Total Daily Energy Expenditure (TDEE): {tdee} kcal\n"
+        f"Protein: {protein_g} g\n"
+        f"Carbohydrates: {carbs_g} g\n"
+        f"Fats: {fats_g} g"
+    )
+    return result
 
 # Micronutrient Requirements (Basic)
-def calculate_micronutrients(goal:str, age: int, gender: str, activity_level: str) -> dict:
+def calculate_micronutrients(goal:str, age: int, gender: str, activity_level: str) -> str:
     
     goal = goal.lower()
     gender = gender.lower()
@@ -248,11 +255,12 @@ def calculate_micronutrients(goal:str, age: int, gender: str, activity_level: st
         micronutrients["Manganese (mg)"] += 0.5  # Supports muscle function
         micronutrients["Chromium (mcg)"] += 5  # Helps energy metabolism
 
-    return micronutrients
+    result = "\n".join([f"{nutrient}: {amount}" for nutrient, amount in micronutrients.items()])
+    return result
 
 
 # Energy Surplus/Deficit
-def calculate_energy_surplus_deficit(tdee: float, goal: str) -> dict:
+def calculate_energy_surplus_deficit(tdee: float, goal: str) -> float:
 
     # Normalize input
     goal = goal.lower()
@@ -273,7 +281,7 @@ def calculate_energy_surplus_deficit(tdee: float, goal: str) -> dict:
     return round(adjusted_calories)
 
 # Glycemic Index & Load
-def glycemic_index_load(food: str, portion_size: float) -> dict:
+def glycemic_index_load(food: str, portion_size: float) -> str:
 
     food = food.lower()
 
@@ -299,7 +307,7 @@ def glycemic_index_load(food: str, portion_size: float) -> dict:
     }
 
 # Bone Mineral Density (BMD)
-def calculate_bmd(weight: float, height: float, age: int, bfp: float, gender: str) -> dict:
+def calculate_bmd(weight: float, height: float, age: int, bfp: float, gender: str) -> str:
     
     gender = gender.lower()
 
@@ -319,63 +327,20 @@ def calculate_bmd(weight: float, height: float, age: int, bfp: float, gender: st
     else:
         category = "Osteoporosis (Very Low Bone Mass)"
 
-    return {
-        "Bone Mineral Density (BMD)": round(bmd, 2),
-        "Bone Health Category": category
-    }
-
-# Resting Heart Rate 
-def calculate_resting_heart_rate(age: int, fitness_level: str) -> dict:
-    """
-    Estimates Resting Heart Rate (RHR) based on age and fitness level.
-
-    :param age: Age in years
-    :param fitness_level: 'Athlete', 'Excellent', 'Good', 'Average', 'Below Average', 'Poor'
-    :return: Estimated RHR and heart health category
-    """
-    fitness_level = fitness_level.strip().title()  # Normalize input
-
-    rhr_ranges = {
-        "Athlete": (40, 54),
-        "Excellent": (55, 64),
-        "Good": (65, 72),
-        "Average": (73, 78),
-        "Below Average": (79, 84),
-        "Poor": (85, 100)
-    }
-
-    if fitness_level not in rhr_ranges:
-        return {"Error": "Invalid fitness level. Choose from 'Athlete', 'Excellent', 'Good', 'Average', 'Below Average', 'Poor'."}
-
-    # Base RHR range from fitness level
-    rhr_min, rhr_max = rhr_ranges[fitness_level]
-    
-    # Adjust RHR based on age (older adults tend to have higher RHR)
-    age_adjustment = 0
-    if age > 40:
-        age_adjustment = (age - 40) // 10 * 2  # +2 bpm for every 10 years over 40
-
-    adjusted_min = rhr_min + age_adjustment
-    adjusted_max = rhr_max + age_adjustment
-    avg_rhr = round((adjusted_min + adjusted_max) / 2)
-
-    return {
-        "Fitness Level": fitness_level,
-        "Age": age,
-        "Estimated RHR (bpm)": avg_rhr,
-        "Healthy Range (bpm)": f"{adjusted_min} - {adjusted_max}"
-    }
+    return (
+        f"Bone Mineral Density (BMD): {bmd}\n"
+        f"Bone Health Category: {category}"
+    )
 
 # Max Heart Rate
 def calculate_max_heart_rate(age: int) -> int:
     return 220 - age
 
 # Body Water Percentage (BWP)
-def calculate_body_water_percentage(weight: float, height: float, gender: str, age: int, bfp: float, activity: str, electrolyte: str) -> float:
+def calculate_body_water_percentage(weight: float, height: float, gender: str, age: int, bfp: float, activity: str) -> float:
     
     gender = gender.lower()
     activity = activity.lower()
-    electrolyte = electrolyte.lower()
 
     # Assign coefficients based on gender
     if gender == "male":
@@ -391,17 +356,17 @@ def calculate_body_water_percentage(weight: float, height: float, gender: str, a
         "very active": 1.5
     }
 
-    # Electrolyte Balance Adjustment
-    electrolyte_levels = {
-        "Optimal": 0.0,
-        "moderate deficiency": -1.5,
-        "deficient": -3.0,
-        "severe deficiency": -5.0
-    }
-
-    electrolyte_adjustment = electrolyte_levels[electrolyte]
-
     activity_factor = activity_levels[activity]
+
+    if bfp < 10:
+        electrolyte_adjustment = -5.0  # severe deficiency
+    elif bfp < 15:
+        electrolyte_adjustment = -3.0  # deficient
+    elif bfp < 20:
+        electrolyte_adjustment = -1.5  # moderate deficiency
+    else:
+        electrolyte_adjustment = 0.0   # optimal
+
 
     # Calculate Total Body Water (TBW)
     tbw = (weight * A) + (height * B) - (age * C) - (bfp * D) + E + activity_factor + electrolyte_adjustment
@@ -494,7 +459,7 @@ def calculate_metabolic_flexibility(activity_level: str, diet_type: str) -> str:
     return mf_score
 
 # Electrolyte Balance – Sodium, Potassium, Magnesium
-def calculate_electrolyte_balance(age: int, gender: str, activity_level: str, goal: str) -> dict:
+def calculate_electrolyte_balance(age: int, gender: str, activity_level: str, goal: str) -> str:
 
     # Base Recommended Daily Intake (RDI) in mg
     rdi_base = {
@@ -533,12 +498,16 @@ def calculate_electrolyte_balance(age: int, gender: str, activity_level: str, go
     for nutrient, factor in goal_adjustments.get(goal, {}).items():
         rdi_base[nutrient] *= factor
 
-    # Format Final Output
-    result = {f"Recommended {nutrient.capitalize()} (mg/day)": round(value, 2) for nutrient, value in rdi_base.items()}
-    result["Activity Level"] = activity_level
-    result["Health Goal"] = goal
+    output = (
+        f"Electrolyte & Mineral Recommendations:\n"
+        f"Age: {age} | Gender: {gender.title()} | Activity Level: {activity_level.title()} | Goal: {goal.title()}\n"
+        f"Recommended Sodium: {round(rdi_base['sodium'], 2)} mg/day\n"
+        f"Recommended Potassium: {round(rdi_base['potassium'], 2)} mg/day\n"
+        f"Recommended Magnesium: {round(rdi_base['magnesium'], 2)} mg/day\n"
+        f"Recommended Calcium: {round(rdi_base['calcium'], 2)} mg/day"
+    )
 
-    return result
+    return output
 
 # Sleep Quality & Duration Score
 def calculate_sleep_score(duration: float) -> float:
@@ -547,7 +516,7 @@ def calculate_sleep_score(duration: float) -> float:
     return sleep_score
 
 # Daily Fiber Intake – Essential for Digestion & Gut Health
-def daily_fiber_intake(age: int, gender: str, activity_level: str, goal: str) -> dict:
+def daily_fiber_intake(age: int, gender: str, activity_level: str, goal: str) -> str:
 
     gender = gender.lower()
     activity_level = activity_level.lower()
@@ -586,7 +555,10 @@ def daily_fiber_intake(age: int, gender: str, activity_level: str, goal: str) ->
     # Final fiber requirement
     recommended_fiber = base_fiber + activity_adjustment[activity_level] + goal_adjustment[goal]
 
-    return {
-        "Recommended Daily Fiber Intake (g)": recommended_fiber,
-        "Category": f"{gender.capitalize()} ({'≤50' if age <= 50 else '>50'} years, {activity_level.capitalize()} activity, {goal.capitalize()} goal)"
-    }
+    output = (
+        f"Daily Fiber Recommendation:\n"
+        f"Age: {age} | Gender: {gender.capitalize()} | Activity Level: {activity_level.capitalize()} | Goal: {goal.capitalize()}\n"
+        f"Recommended Daily Fiber Intake: {recommended_fiber} grams"
+    )
+
+    return output

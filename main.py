@@ -13,7 +13,12 @@ import pytesseract
 import pdfplumber
 import fitz
 import health_metrics
-import ollama
+from langchain.tools import tool
+from langchain_community.chat_message_histories import RedisChatMessageHistory
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from langchain_community.llms import Ollama
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -319,18 +324,6 @@ async def update_password(password_data: PasswordUpdate, session_id: str = Cooki
     else:
         raise HTTPException(status_code=401, detail="Current password is incorrect.")
 
-@app.get("/chat/history/")
-async def get_chat_history(session_id: str = Cookie(None)):
-    if not session_id:
-        raise HTTPException(status_code=403, detail="User is not logged in.")
-
-    email = await redis_client.get(f"session:{session_id}")
-    if not email:
-        raise HTTPException(status_code=403, detail="Invalid session.")
-
-    history = await redis_client.lrange(f"{email.decode()}:chats", 0, -1)  # Fetch full history
-    return {"history": [entry.decode("utf-8") for entry in history]}
-
 @app.post("/chat/")
 async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
     if not session_id:
@@ -359,12 +352,8 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
         preferences=preferences_data,
         health_conditions=health_data,
         redis_client=redis_client,
-         email=email
+        email=email
     )
-    
-    # Save the full chat history
-    chat_entry = f"User: {message.message}\nBot: {response['bot_response']}"
-    await redis_client.rpush(f"{email}:chats", chat_entry)
 
     # Return structured data with the chat message
     return ChatMessage(
@@ -372,41 +361,43 @@ async def chat_with_bot(message: Message, session_id: str = Cookie(None)):
         bot_response=response['bot_response']
     )
 
-async def generate_bot_response(user_message: str, 
-                                personal_details: PersonalDetails, 
-                                preferences: Preferences, 
-                                health_conditions: HealthConditions, 
-                                redis_client, email: str) -> dict:
+async def generate_bot_response(user_message: str,
+                                 personal_details: PersonalDetails,
+                                 preferences: Preferences,
+                                 health_conditions: HealthConditions,
+                                 redis_client, email: str) -> str:
     
-    """Generate bot response using TinyLlama with health details and past context."""
-
-    # Fetch last 5 chat messages for context (only Redis call in this function)
-    chat_history = await redis_client.lrange(f"chat_history:{email}", -5, -1)
-    chat_context = "\n".join([entry.decode("utf-8") for entry in chat_history])
-
-    # Construct a concise prompt
-    prompt = f"""
-    User Profile:
-    Personal Details: {', '.join([f'{k}: {v}' for k, v in personal_details.dict().items() if v])}
-    Preferences: {', '.join([f'{k}: {v}' for k, v in preferences.dict().items() if v])}
-    Health Conditions: {', '.join([f'{k}: {v}' for k, v in health_conditions.dict().items() if v])}
-
-    Recent Conversation:
-    {chat_context}
-
-    Current Question:
-    {user_message}
-
-    Respond as a nutritional expert tailored to the user's profile:
+    # Construct system context from user profile
+    profile_context = f"""
+    Personal Details: {personal_details.model_dump()}
+    Preferences: {preferences.model_dump()}
+    Health Conditions: {health_conditions.model_dump()}
     """
 
-    # Generate response using TinyLlama
-    response = ollama.chat(model="tinyllama", messages=[{"role": "user", "content": prompt}])["message"]["content"]
-
-    # Save latest chat history (for context only)
-    await redis_client.rpush(f"chat_history:{email}", user_message)
+    # Setup LangChain components
+    history = RedisChatMessageHistory(session_id=email, redis_client=redis_client)
+    memory = ConversationBufferMemory(chat_memory=history, return_messages=True)
     
-    return {"bot_response": response}
+    prompt = PromptTemplate(
+        input_variables=["input", "profile"],
+        template="""
+        You are a health and nutrition expert chatbot. Use the user's profile to provide personalized responses.
+        
+        User Profile: {profile}
+        
+        Chat:
+        {input}
+        """,
+    )
+
+    llm = Ollama(model="tinyllama")
+
+    chain = LLMChain(llm=llm, prompt=prompt, memory=memory)
+
+    # Run LangChain LLMChain with profile context and user message
+    response = chain.run(input=user_message, profile=profile_context)
+
+    return response
 
 @app.post("/upload/")
 async def upload_file(file: UploadFile = File(...), session_id: str = Cookie(None)):

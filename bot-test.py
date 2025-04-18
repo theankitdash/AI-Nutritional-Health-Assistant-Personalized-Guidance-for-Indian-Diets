@@ -10,7 +10,7 @@ def test_tinyllama():
                 break
         
         # Call the model using ollama
-        response = ollama.chat(model="TinyLlama", messages=[{"role": "user", "content": user_input}])
+        response = ollama.chat(model="gemma:2b", messages=[{"role": "user", "content": user_input}])
         
         # Print the response from the model
         print(response["message"]["content"])
