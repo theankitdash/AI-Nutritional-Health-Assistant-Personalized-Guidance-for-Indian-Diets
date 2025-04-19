@@ -7,7 +7,7 @@ from langchain_ollama.llms import OllamaLLM
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 import uuid
-import bcrypt
+import bcrypt 
 import health_metrics
 import json
 
@@ -18,10 +18,6 @@ redis = Redis(host="localhost", port=6379, db=0)
 
 # Initialize the LLM
 LLM = OllamaLLM(model="gemma:2b")
-
-#Load food dataset
-with open("food_dataset.json") as f:
-    food_data = json.load(f)
 
 # Mount the static directory
 app.mount("/static", StaticFiles(directory="static"), name="static")

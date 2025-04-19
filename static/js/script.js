@@ -50,36 +50,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
         
         if (isLoggedIn) {
-            const sessionExpiry = localStorage.getItem('sessionExpiry');
-            const currentTime = new Date().getTime();
-
-            // If session expiry exists and the current time is less than the expiry time, session is active
-            if (sessionExpiry && currentTime < sessionExpiry) {
-                // Session is active, proceed with fetching data
-                fetchPersonalDetails(); 
-                fetchPreferences();
-                fetchHealthConditions();
-            } else {
-                // Reset local storage if the session is inactive
-                localStorage.setItem('isLoggedIn', 'false');
-                localStorage.removeItem('sessionExpiry');
-                // Show the modal if session is expired
-                authModal.style.display = 'block';
-            }
+            // Session is active, proceed with fetching data
+            fetchPersonalDetails(); 
+            fetchPreferences();
+            fetchHealthConditions();
         } else {
-            // Show the modal if the user is not logged in
+            // Show the modal if session is expired
             authModal.style.display = 'block';
-        } 
+        }
+         
     }
 
     // Function to handle user login
     function handleLogin() {
-        // Set the session expiration time (e.g., 1 hour from now)
-        const expiryTime = new Date().getTime() + 3600000; // 1 hour
-
         // Store the login status and session expiry time in localStorage
         localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('sessionExpiry', expiryTime);
 
         // Close the authentication modal (if it's open)
         authModal.style.display = 'none';
@@ -604,7 +589,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (response.ok) {
                 alert('Logout successful.');
                 localStorage.setItem('isLoggedIn', 'false');
-                localStorage.removeItem('sessionExpiry');
                 window.location.reload();
             } else {
                 console.error('Error during logout:', response.statusText);

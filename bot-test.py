@@ -1,6 +1,6 @@
 import ollama
 
-def test_tinyllama():
+def test_gemma():
 
     while True:
         user_input = input("You: ")
@@ -16,4 +16,4 @@ def test_tinyllama():
         print(response["message"]["content"])
 
 if __name__ == "__main__":
-    test_tinyllama()
+    test_gemma()
