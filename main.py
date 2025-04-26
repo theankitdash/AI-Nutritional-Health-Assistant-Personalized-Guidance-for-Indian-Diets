@@ -9,22 +9,11 @@ from langchain.chains import LLMChain
 import uuid
 import bcrypt 
 import health_metrics
-import os
 
 app = FastAPI()
 
-# Redis connection
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_DB = int(os.getenv("REDIS_DB", 0))
-
-try:
-    redis = Redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
-    redis.ping()  # Test connection
-    print("Connected to Redis")
-except Redis.RedisError as e:
-    print("Redis connection failed:", str(e))
-    redis = None
+# Connect to Redis
+redis = Redis(host="localhost", port=6379, db=0)
 
 # Initialize the LLM
 LLM = OllamaLLM(model="gemma:2b")
@@ -398,4 +387,4 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
 
     return {"bot_response": response}
 
-# Run the application using: uvicorn main1:app --reload      
+# Run the application using: uvicorn main:app --reload      
