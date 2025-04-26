@@ -9,6 +9,7 @@ from langchain.chains import LLMChain
 import uuid
 import bcrypt 
 import health_metrics
+from typing import Optional
 
 app = FastAPI()
 
@@ -77,7 +78,7 @@ class HealthConditions(BaseModel):
     liverDisease: str
     lactoseIntolerance: str
     glutenSensitivity: str
-    pcos: str
+    pcos: Optional[str] = None
     anemia: str
     osteoporosis: str
     ibs: str
@@ -203,6 +204,8 @@ async def add_preferences(preferences: Preferences, session_id: str = Cookie(Non
 async def add_health_conditions(health_conditions: HealthConditions, session_id: str = Cookie(None)):
     
     email = await validate_session(session_id)
+
+    health_conditions = health_conditions.model_dump(exclude_none=True)
 
     await redis.hset(f"health_conditions:{email}", mapping=health_conditions.model_dump())
 

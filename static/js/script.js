@@ -13,6 +13,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const logoutButton = document.getElementById('logout-btn');
     const uploadButton = document.getElementById('upload-btn');
     const fileInput = document.getElementById('file-input');
+    const genderSelect = document.getElementById("gender");
+    const pcosField = document.getElementById("pcos-field");
 
     // Personal details modal and settings
     const personalDetailsModal = document.getElementById('personal-details-modal');
@@ -210,21 +212,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Function to toggle PCOS field based on gender
-    function togglePCOSField(gender) {
-        const pcosField = document.getElementById("pcos-field");
-        if (gender === "female") {
-        pcosField.style.display = "block";
+    genderSelect.addEventListener('change', () => {
+        if (genderSelect.value.toLowerCase() === 'female') {
+            pcosField.style.display = 'block'; // Show PCOS field for female
         } else {
-        pcosField.style.display = "none";
+            pcosField.style.display = 'none'; // Hide PCOS field for male
+            document.getElementById("pcos").value = "no"; // Reset PCOS to "no" if hidden
         }
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        const userGender = document.getElementById('gender'); 
-        togglePCOSField(userGender);
     });
-
+    
     // Event to show account settings modal
     accountSettingsBtn.addEventListener('click', () => {
         accountSettingsModal.style.display = 'block';
