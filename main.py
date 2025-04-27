@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Cookie
+from fastapi import FastAPI, HTTPException, Request, Cookie
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
@@ -10,11 +10,16 @@ import uuid
 import bcrypt 
 import health_metrics
 from typing import Optional
+import os
 
 app = FastAPI()
 
-# Connect to Redis
-redis = Redis(host="localhost", port=6379, db=0)
+# Redis connection
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_DB = int(os.getenv("REDIS_DB", 0))
+
+redis = Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 # Initialize the LLM
 LLM = OllamaLLM(model="gemma:2b")
@@ -143,6 +148,20 @@ async def login_user(credentials: UserCredentials):
         return response
     else:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
+    
+from fastapi import Request
+
+@app.get("/check-login/")
+async def check_login(request: Request):
+    session_id = request.cookies.get("session_id")
+
+    if session_id:
+        user_email = await redis.get(f"session:{session_id}")
+        if user_email:
+            return {"isAuthenticated": True}
+
+    return {"isAuthenticated": False}
+
 
 @app.post("/logout/")
 async def logout_user(session_id: str = Cookie(None)):

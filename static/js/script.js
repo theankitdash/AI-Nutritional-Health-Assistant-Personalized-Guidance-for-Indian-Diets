@@ -11,8 +11,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const chatForm = document.getElementById('chat-form');
     const confirmPasswordGroup = document.getElementById('confirm-password-group');
     const logoutButton = document.getElementById('logout-btn');
-    const uploadButton = document.getElementById('upload-btn');
-    const fileInput = document.getElementById('file-input');
     const genderSelect = document.getElementById("gender");
     const pcosField = document.getElementById("pcos-field");
 
@@ -48,33 +46,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Check login status on page load
     async function checkLoginStatus() {
-        // Check if the user is logged in using local storage
-        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-        
-        if (isLoggedIn) {
-            // Session is active, proceed with fetching data
-            fetchPersonalDetails(); 
-            fetchPreferences();
-            fetchHealthConditions();
-        } else {
-            // Show the modal if session is expired
+        try {
+            const response = await fetch('/check-login/', { method: 'GET' });
+    
+            if (response.ok) {
+                const data = await response.json();
+                if (!data.isAuthenticated) {
+                    authModal.style.display = 'block';
+                }
+            } else {
+                authModal.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error checking login status:', error);
             authModal.style.display = 'block';
         }
-         
-    }
-
-    // Function to handle user login
-    function handleLogin() {
-        // Store the login status and session expiry time in localStorage
-        localStorage.setItem('isLoggedIn', 'true');
-
-        // Close the authentication modal (if it's open)
-        authModal.style.display = 'none';
-
-        // Optionally, fetch user data immediately after login
-        fetchPersonalDetails();
-        fetchPreferences();
-        fetchHealthConditions();
     }
 
     // Close modal when user clicks on <span> (x)
@@ -211,15 +197,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             alert("Please fill all the personal details.");
         }
     });
-
-    genderSelect.addEventListener('change', () => {
-        if (genderSelect.value.toLowerCase() === 'female') {
-            pcosField.style.display = 'block'; // Show PCOS field for female
-        } else {
-            pcosField.style.display = 'none'; // Hide PCOS field for male
-            document.getElementById("pcos").value = "no"; // Reset PCOS to "no" if hidden
-        }
-    });
     
     // Event to show account settings modal
     accountSettingsBtn.addEventListener('click', () => {
@@ -345,7 +322,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const data = await fetchData("/health-conditions", "GET");
             console.log("Fetched Health Conditions:", data);
-            // Set allergies data
             document.getElementById("allergies").value = data.allergies || null;
             document.getElementById("diabetes").value = data.diabetes;
             document.getElementById("hypertension").value = data.hypertension;
@@ -355,7 +331,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("liver-disease").value = data.liverDisease;
             document.getElementById("lactose-intolerance").value = data.lactoseIntolerance;
             document.getElementById("gluten-sensitivity").value = data.glutenSensitivity;
-            document.getElementById("pcos").value = data.pcos;
+            document.getElementById("pcos").value = data.pcos || null;
             document.getElementById("anemia").value = data.anemia;
             document.getElementById("osteoporosis").value = data.osteoporosis;
             document.getElementById("ibs").value = data.ibs;
@@ -388,6 +364,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         return response.json();
     }
+
+    genderSelect.addEventListener('change', () => {
+        if (genderSelect.value.toLowerCase() === 'female') {
+            pcosField.style.display = 'block'; // Show PCOS field for female
+        } else {
+            pcosField.style.display = 'none'; // Hide PCOS field for male
+            document.getElementById("pcos").value = "no"; // Reset PCOS to "no" if hidden
+        }
+    });
 
     // Email validation function
     function isValidEmail(email) {
@@ -496,7 +481,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     if (response.ok) {
                         // Show success alert
                         alert('Login Successful!'); 
-                        handleLogin();
+                        fetchPersonalDetails(); // Fetch personal details after login
+                        fetchPreferences(); // Fetch preferences after login
+                        fetchHealthConditions(); // Fetch health conditions after login
                         authModal.style.display = 'none'; 
                     } else {
                         const errorData = await response.json();
@@ -583,8 +570,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
 
             if (response.ok) {
-                alert('Logout successful.');
-                localStorage.setItem('isLoggedIn', 'false');
+                alert('Logout successful.');                
                 window.location.reload();
             } else {
                 console.error('Error during logout:', response.statusText);
@@ -640,36 +626,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to the bottom
     }
 
-    // Show file input when upload button is clicked
-    uploadButton.onclick = () => {
-        fileInput.click(); // Trigger file input click
-    };
-
-    // Handle file upload
-    fileInput.onchange = async function () {
-        const file = fileInput.files[0]; // Get the uploaded file
-        if (file) {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                const response = await fetch('/upload/', {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'include', // Include cookies for session management
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    appendMessage('bot', 'File analyzed successfully: ' + data.bot_response);
-                } else {
-                    console.error('Error:', response.statusText);
-                    appendMessage('bot', 'Error uploading file.');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                appendMessage('bot', 'Error communicating with the server.');
-            }
-        }
-    };
 });
