@@ -5,12 +5,22 @@ from pydantic import BaseModel, EmailStr
 from redis.asyncio import Redis
 from langchain_ollama.llms import OllamaLLM
 from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+from langchain_community.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_core.documents import Document
 import uuid
 import bcrypt 
 import health_metrics
 from typing import Optional
 import os
+import json
+import faiss
+from dotenv import load_dotenv
+
+load_dotenv()
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 
 app = FastAPI()
 
@@ -23,6 +33,40 @@ redis = Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 # Initialize the LLM
 LLM = OllamaLLM(model="gemma:2b")
+
+"""
+LLM = ChatNVIDIA(
+  model="google/gemma-7b",
+  api_key=NVIDIA_API_KEY, 
+  temperature=0.5,
+  top_p=1,
+  max_tokens=1024,
+)
+"""
+
+# Load FAISS index
+index = faiss.read_index("food_dataset/index.faiss")
+
+# Load texts from JSON
+with open("food_dataset/index.json", "r", encoding="utf-8") as f:
+    texts = json.load(f)
+
+# Convert to LangChain documents
+documents = [Document(page_content=txt) for txt in texts]
+
+# Create docstore and ids
+docstore = InMemoryDocstore(dict(zip([str(i) for i in range(len(texts))], documents)))
+index_to_docstore_id = {i: str(i) for i in range(len(texts))}
+
+# Build FAISS vectorstore manually — no pickle, no deserialization flag needed
+embedding = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+
+faiss_index = FAISS(
+    embedding_function=embedding,
+    index=index,
+    docstore=docstore,
+    index_to_docstore_id=index_to_docstore_id,
+)
 
 # Mount the static directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -376,29 +420,40 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
     await redis.rpush(history_key, f"User: {chat.message}")
     await redis.ltrim(history_key, -10, -1)  # Keep only last 10 messages
 
+    # Search FAISS index
+    retrieved_docs = faiss_index.similarity_search(chat.message, k=3)
+
+    # Combine the retrieved documents into a string
+    retrieved_context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+
     # Create the prompt
     prompt_template = PromptTemplate(
-        input_variables=["user_context", "conversation_history", "user_message"],
+        input_variables=["user_context", "retrieved_context", "conversation_history", "user_message"],
         template="""
-        You are a personalized nutrition assistant specialized in Indian dietary habits. Use the user's health data and preferences to respond naturally.
+        You are a friendly and knowledgeable AI nutrition assistant specialized in **Indian dietary habits, health conditions, and regional food culture**.
+        Use the following information to offer thoughtful, context-aware suggestions rooted in Indian nutrition and lifestyle practices.
 
-        User Profile:
+        *User Profile*:
         {user_context}
 
-        Previous Conversation:
+        *Indian Nutrition Database*:
+        {retrieved_context}
+
+        *Previous Conversation with the User*:
         {conversation_history}
 
-        User Now Says:
+        *User's Current Message*:
         {user_message}
 
-        Reply in a friendly, knowledgeable, and contextual way based on the above info.
+        Based on the above, give your response:
         """
-    )
+        )
 
-    chain = LLMChain(llm=LLM, prompt=prompt_template)
+    chain = prompt_template | LLM
 
-    response = chain.run({
+    response = chain.invoke({
         "user_context": user_context,
+        "retrieved_context": retrieved_context,
         "conversation_history": conversation_history,
         "user_message": chat.message
     })
