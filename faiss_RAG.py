@@ -28,6 +28,10 @@ def row_to_text(row):
 
 texts = [row_to_text(row) for _, row in df.iterrows()]
 
+print("Sample semantic descriptions:\n")
+for i, text in enumerate(texts[:3], start=1):
+    print(f"--- Entry {i} ---\n{text}\n")
+    
 # Step 3: Embed the texts
 model = SentenceTransformer('all-MiniLM-L6-v2')
 embeddings = model.encode(texts, show_progress_bar=True)
