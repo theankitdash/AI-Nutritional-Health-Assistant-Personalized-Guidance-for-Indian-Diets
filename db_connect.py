@@ -123,4 +123,14 @@ async def connect_db():
         );
     """)
 
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS chat_history (
+            id SERIAL PRIMARY KEY,
+            email TEXT NOT NULL,
+            message TEXT NOT NULL,
+            timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            FOREIGN KEY (email) REFERENCES credentials(email)
+        ); 
+    """)              
+
     return conn

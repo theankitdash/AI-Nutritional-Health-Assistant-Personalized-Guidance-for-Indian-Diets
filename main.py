@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_ollama.llms import OllamaLLM
 from langchain.prompts import PromptTemplate
+from langchain_core.messages import BaseMessage
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.docstore.in_memory import InMemoryDocstore
@@ -501,49 +502,56 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
         conn = await connect_db()
 
         # Retrieve user data from PostgreSQL
-        personal = await conn.fetchrow("SELECT * FROM personal_details WHERE email = $1", email)
-        prefs = await conn.fetchrow("SELECT * FROM preferences WHERE email = $1", email)
-        conditions = await conn.fetchrow("SELECT * FROM health_conditions WHERE email = $1", email)
-        metrics = await conn.fetchrow("SELECT * FROM health_metrics WHERE email = $1", email)
+        personal_details = await conn.fetchrow("SELECT * FROM personal_details WHERE email = $1", email)
+        preferences = await conn.fetchrow("SELECT * FROM preferences WHERE email = $1", email)
+        health_conditions = await conn.fetchrow("SELECT * FROM health_conditions WHERE email = $1", email)
+        health_metrics = await conn.fetchrow("SELECT * FROM health_metrics WHERE email = $1", email)
 
-        # Close the connection
-        await conn.close()
+        # Decode data into appropriate classes
+        personal = PersonalDetails(**personal_details)
+        prefs = Preferences(**preferences)
+        conditions = HealthConditions(**health_conditions)
+        metrics = HealthMetrics(**health_metrics)
 
-        if not personal or not prefs or not conditions or not metrics:
-            raise HTTPException(status_code=400, detail="Missing user profile data.")
-
-        # Build user context
+       # Build user context
         user_context = f"""
         Personal Details:
-        Name: {personal['name']}, Age: {health_metrics.calculate_age(personal['date_of_birth'])}, Gender: {personal['gender']}
-        Height: {personal['height']} cm, Weight: {personal['weight']} kg, Waist: {personal['waist']} cm
+        Name: {personal.name}, Age: {metrics.age}, Gender: {personal.gender}
+        Height: {personal.height} cm, Weight: {personal.weight} kg, Waist: {personal.waist} cm
 
         Preferences:
-        Food Preference: {prefs['food_preference']}, Snack Preference: {prefs['snack_preferences']}, Meal Timings: {prefs['meal_timings']}
-        Activity Level: {prefs['activity_level']}, Fitness Goal: {prefs['fitness_goal']}, Cultural Preferences: {prefs['cultural_preferences']}, Cuisine Preferences: {prefs['cuisine_preferences']}
-        Spicy Food Tolerance: {prefs['spicy_food_tolerance']}, Preferred Meal Type: {prefs['preferred_meal_type']}
-        Favorite Meal: {prefs['favorite_meal']}, Meal Frequency: {prefs['meal_frequency']}, Sweet Preference: {prefs['sweet_preference']}
+        Food Preference: {prefs.foodpreference}, Snack Preference: {prefs.snackpreferences}, Meal Timings: {prefs.mealtimings}
+        Cheat Day Frequency: {prefs.cheatdayfrequency}, Cultural Preferences: {prefs.culturalpreferences}, Preferred Ingredients: {prefs.preferredingredients}
+        Cuisine Preferences: {prefs.cuisinepreferences}, Spicy Food Tolerance: {prefs.spicyfoodtolerance}, Preferred Meal Type: {prefs.preferredmealtype}
+        Favorite Meal: {prefs.favoritemeal}, Meal Frequency: {prefs.mealfrequency}, Sweet Preference: {prefs.sweetpreference}
+        Eating Out Frequency: {prefs.eatingoutfrequency}, Hydration Level: {prefs.hydrationlevel} L, Preferred Drinks: {prefs.preferreddrinks}
+        Activity Level: {prefs.activitylevel}, Fitness Goal: {prefs.fitnessgoal}, Food Restrictions: {prefs.foodrestrictions}
+        Caffeine Intake: {prefs.caffeineintake}, Average Sleep: {prefs.averagesleep} hrs, Sleep Quality: {prefs.sleepquality}
+        Supplement Usage: {prefs.supplementusage}, Supplement Frequency: {prefs.supplementfrequency}
 
         Health Conditions:
-        Allergies: {conditions['allergies']}, Diabetes: {conditions['diabetes']}, Hypertension: {conditions['hypertension']}, Other: {conditions['other_conditions']}
-        PCOS: {conditions['pcos']}, Anemia: {conditions['anemia']}, Osteoporosis: {conditions['osteoporosis']}, IBS: {conditions['ibs']}
-        GERD: {conditions['gerd']}
+        Allergies: {conditions.allergies}, Diabetes: {conditions.diabetes}, Hypertension: {conditions.hypertension}, Cholesterol: {conditions.cholesterol}
+        Thyroid: {conditions.thyroid}, Kidney Disease: {conditions.kidneydisease}, Liver Disease: {conditions.liverdisease}
+        Lactose Intolerance: {conditions.lactoseintolerance}, Gluten Sensitivity: {conditions.glutensensitivity}, PCOS: {conditions.pcos}
+        Anemia: {conditions.anemia}, Osteoporosis: {conditions.osteoporosis}, IBS: {conditions.ibs}, GERD: {conditions.gerd}
+        Gout: {conditions.gout}, Other Conditions: {conditions.otherconditions}
 
-        Metrics:
-        BMI: {metrics['bmi']}, BMR: {metrics['bmr']}, TDEE: {metrics['tdee']}
-        Body Fat Percentage: {metrics['bfp']}, Hydration Level: {metrics['hydration_level']}
-        Muscle Mass: {metrics['muscle_mass']}, Sleep Score: {metrics['sleep_score']}, Fiber Intake: {metrics['fiber']}
-        Protein Intake: {metrics['protein_intake']}, Macro Nutrients: {metrics['macro_nutrients']}, Micro Nutrients: {metrics['micro_nutrients']}
-        Energy Surplus/Deficit: {metrics['energy_surplus_deficit']}, Electrolyte Balance: {metrics['electrolyte_balance']}
-        """
-
-        # Retrieve last 5 messages from PostgreSQL chat history table
-        history = await conn.fetch("SELECT message FROM chat_history WHERE email = $1 ORDER BY timestamp DESC LIMIT 5", email)
+        Health Metrics:
+        Age: {metrics.age}, BMI: {metrics.bmi}, BMR: {metrics.bmr}, TDEE: {metrics.tdee}
+        Body Fat Percentage: {metrics.bfp}, Lean Body Mass: {metrics.lbm}, Muscle Mass: {metrics.muscle_mass}
+        Visceral Fat: {metrics.visceral_fat}, Waist-Hip Ratio: {metrics.whr}, Metabolic Age: {metrics.metabolic_age}
+        Hydration Level: {metrics.hydration_level}, Protein Intake: {metrics.protein_intake}, Macro Nutrients: {metrics.macro_nutrients}
+        Micro Nutrients: {metrics.micro_nutrients}, Energy Surplus/Deficit: {metrics.energy_surplus_deficit}
+        Bone Mineral Density: {metrics.bmd}, Max Heart Rate: {metrics.max_heart_rate}, Electrolyte Balance: {metrics.electrolyte_balance}
+        Skeletal Mass: {metrics.skeletal_mass}, Sleep Score: {metrics.sleep_score}, Fiber Intake: {metrics.fiber}
+        """        
+        # Retrieve last 10 messages from PostgreSQL chat history table
+        history = await conn.fetch("SELECT message FROM chat_history WHERE email = $1 ORDER BY timestamp DESC LIMIT 10", email)
 
         conversation_history = "\n".join([msg['message'] for msg in reversed(history)]) if history else "No previous conversation."
 
         # Add new user message to history
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
         await conn.execute("INSERT INTO chat_history (email, message, timestamp) VALUES ($1, $2, $3)", email, f"User: {chat.message}", timestamp)
 
         # Search FAISS index
@@ -556,8 +564,8 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
         prompt_template = PromptTemplate(
             input_variables=["user_context", "retrieved_context", "conversation_history", "user_message"],
             template=""" 
-            You are a friendly and knowledgeable AI nutrition assistant specialized in **Indian dietary habits, health conditions, and regional food culture**.
-            Use the following information to offer thoughtful, context-aware suggestions rooted in Indian nutrition and lifestyle practices.
+            You are a personalized nutrition assistant specialized in Indian dietary habits. 
+            Use the user's health metrics, preferences, and health conditions to respond naturally.
 
             *User Profile*:
             {user_context}
@@ -565,24 +573,29 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
             *Indian Nutrition Database*:
             {retrieved_context}
 
-            *Previous Conversation with the User*:
+            *Previous Conversation*:
             {conversation_history}
 
             *User's Current Message*:
             {user_message}
 
-            Based on the above, give your response:
+            Reply in a friendly, knowledgeable, and contextual way based on the above info.
             """
         )
 
         chain = prompt_template | LLM
 
-        response = chain.invoke({
+        bot_response = chain.invoke({
             "user_context": user_context,
             "retrieved_context": retrieved_context,
             "conversation_history": conversation_history,
             "user_message": chat.message
         })
+
+        if isinstance(bot_response, BaseMessage):
+            response = bot_response.content
+        else:
+            response = str(bot_response)
 
         # Save bot response to history
         await conn.execute("INSERT INTO chat_history (email, message, timestamp) VALUES ($1, $2, $3)", email, f"Bot: {response}", timestamp)
@@ -590,6 +603,9 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
         return {"bot_response": response}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error processing the chat request.")    
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Error processing the chat request.")  
+    finally:
+        await conn.close() 
 
 # Run the application using: uvicorn main:app --reload      
