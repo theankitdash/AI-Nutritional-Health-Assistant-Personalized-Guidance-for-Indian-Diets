@@ -415,7 +415,7 @@ async def calculate_and_store_health_metrics(email: str):
                 macro_nutrients = EXCLUDED.macro_nutrients, micro_nutrients = EXCLUDED.micro_nutrients, energy_surplus_deficit = EXCLUDED.energy_surplus_deficit,
                 bmd = EXCLUDED.bmd, max_heart_rate = EXCLUDED.max_heart_rate, electrolyte_balance = EXCLUDED.electrolyte_balance,
                 skeletal_mass = EXCLUDED.skeletal_mass, sleep_score = EXCLUDED.sleep_score, fiber = EXCLUDED.fiber
-        """, *health_metrics_data.model_dump().values())
+        """, email, *health_metrics_data.model_dump().values())
 
         await conn.close()
 
