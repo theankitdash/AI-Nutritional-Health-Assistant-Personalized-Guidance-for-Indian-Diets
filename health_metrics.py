@@ -1,10 +1,9 @@
-import datetime
+from datetime import date
 
 # Age
-def calculate_age(dob: str) -> int:
-    birth_date = datetime.datetime.strptime(dob, "%Y-%m-%d")
-    today = datetime.datetime.today()
-    return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+def calculate_age(dob: date) -> int:
+    today = date.today()
+    return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
 
 # BMI
 def calculate_bmi(weight: float, height: float) -> float: 
