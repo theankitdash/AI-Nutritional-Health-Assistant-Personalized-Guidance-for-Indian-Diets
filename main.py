@@ -532,14 +532,6 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
         Energy Surplus/Deficit: {metrics.get("energy_surplus_deficit")}, Electrolyte Balance: {metrics.get("electrolyte_balance")}
 
         """    
-        # Retrieve last 10 messages from PostgreSQL chat history table
-        history = await conn.fetch("SELECT message FROM chat_history WHERE email = $1 ORDER BY timestamp DESC LIMIT 10", email)
-
-        conversation_history = "\n".join([msg['message'] for msg in reversed(history)]) if history else "No previous conversation."
-
-        # Add new user message to history
-        timestamp = datetime.now(timezone.utc)
-        await conn.execute("INSERT INTO chat_history (email, message, timestamp) VALUES ($1, $2, $3)", email, f"User: {chat.message}", timestamp)
 
         # Search FAISS index
         retrieved_docs = faiss_index.similarity_search(chat.message, k=3)
@@ -579,9 +571,6 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
             response = bot_response.content
         else:
             response = str(bot_response)
-
-        # Save bot response to history
-        await conn.execute("INSERT INTO chat_history (email, message, timestamp) VALUES ($1, $2, $3)", email, f"Bot: {response}", timestamp)
 
         return {"bot_response": response}
 
