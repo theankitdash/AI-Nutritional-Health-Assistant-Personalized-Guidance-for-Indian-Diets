@@ -28,7 +28,7 @@ load_dotenv()
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 
 app = FastAPI()
-
+"""
 # Initialize the LLM
 LLM = OllamaLLM(model="gemma:2b")
 
@@ -40,7 +40,7 @@ LLM = ChatNVIDIA(
   top_p=1,
   max_tokens=1024,
 )
-"""
+
 
 # Load FAISS index
 index = faiss.read_index("food_dataset/index.faiss")
@@ -502,49 +502,36 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
         conn = await connect_db()
 
         # Retrieve user data from PostgreSQL
-        personal_details = await conn.fetchrow("SELECT * FROM personal_details WHERE email = $1", email)
-        preferences = await conn.fetchrow("SELECT * FROM preferences WHERE email = $1", email)
-        health_conditions = await conn.fetchrow("SELECT * FROM health_conditions WHERE email = $1", email)
-        health_metrics = await conn.fetchrow("SELECT * FROM health_metrics WHERE email = $1", email)
-
-        # Decode data into appropriate classes
-        personal = PersonalDetails(**personal_details)
-        prefs = Preferences(**preferences)
-        conditions = HealthConditions(**health_conditions)
-        metrics = HealthMetrics(**health_metrics)
+        personal = await conn.fetchrow("SELECT * FROM personal_details WHERE email = $1", email)
+        prefs = await conn.fetchrow("SELECT * FROM preferences WHERE email = $1", email)
+        conditions = await conn.fetchrow("SELECT * FROM health_conditions WHERE email = $1", email)
+        metrics = await conn.fetchrow("SELECT * FROM health_metrics WHERE email = $1", email)
 
        # Build user context
         user_context = f"""
         Personal Details:
-        Name: {personal.name}, Age: {metrics.age}, Gender: {personal.gender}
-        Height: {personal.height} cm, Weight: {personal.weight} kg, Waist: {personal.waist} cm
+        Name: {personal.get("name")}, Age: {health_metrics.calculate_age(personal.get("dateofbirth"))}, Gender: {personal.get("gender")}
+        Height: {personal.get("height")} cm, Weight: {personal.get("weight")} kg, Waist: {personal.get("waist")} cm
 
         Preferences:
-        Food Preference: {prefs.foodpreference}, Snack Preference: {prefs.snackpreferences}, Meal Timings: {prefs.mealtimings}
-        Cheat Day Frequency: {prefs.cheatdayfrequency}, Cultural Preferences: {prefs.culturalpreferences}, Preferred Ingredients: {prefs.preferredingredients}
-        Cuisine Preferences: {prefs.cuisinepreferences}, Spicy Food Tolerance: {prefs.spicyfoodtolerance}, Preferred Meal Type: {prefs.preferredmealtype}
-        Favorite Meal: {prefs.favoritemeal}, Meal Frequency: {prefs.mealfrequency}, Sweet Preference: {prefs.sweetpreference}
-        Eating Out Frequency: {prefs.eatingoutfrequency}, Hydration Level: {prefs.hydrationlevel} L, Preferred Drinks: {prefs.preferreddrinks}
-        Activity Level: {prefs.activitylevel}, Fitness Goal: {prefs.fitnessgoal}, Food Restrictions: {prefs.foodrestrictions}
-        Caffeine Intake: {prefs.caffeineintake}, Average Sleep: {prefs.averagesleep} hrs, Sleep Quality: {prefs.sleepquality}
-        Supplement Usage: {prefs.supplementusage}, Supplement Frequency: {prefs.supplementfrequency}
+        Food Preference: {prefs.get("foodpreference")}, Snack Preference: {prefs.get("snackpreferences")}, Meal Timings: {prefs.get("mealtimings")}
+        Activity Level: {prefs.get("activitylevel")}, Fitness Goal: {prefs.get("fitnessgoal")}, Cultural Preferences: {prefs.get("culturalpreferences")}, Cuisine Preferences: {prefs.get("cuisinepreferences")}
+        Spicy Food Tolerance: {prefs.get("spicyfoodtolerance")}, Preferred Meal Type: {prefs.get("preferredmealtype")}
+        Favorite Meal: {prefs.get("favoritemeal")}, Meal Frequency: {prefs.get("mealfrequency")}, Sweet Preference: {prefs.get("sweetpreference")}
 
         Health Conditions:
-        Allergies: {conditions.allergies}, Diabetes: {conditions.diabetes}, Hypertension: {conditions.hypertension}, Cholesterol: {conditions.cholesterol}
-        Thyroid: {conditions.thyroid}, Kidney Disease: {conditions.kidneydisease}, Liver Disease: {conditions.liverdisease}
-        Lactose Intolerance: {conditions.lactoseintolerance}, Gluten Sensitivity: {conditions.glutensensitivity}, PCOS: {conditions.pcos}
-        Anemia: {conditions.anemia}, Osteoporosis: {conditions.osteoporosis}, IBS: {conditions.ibs}, GERD: {conditions.gerd}
-        Gout: {conditions.gout}, Other Conditions: {conditions.otherconditions}
+        Allergies: {conditions.get("allergies")}, Diabetes: {conditions.get("diabetes")}, Hypertension: {conditions.get("hypertension")}
+        Other: {conditions.get("otherconditions")}, PCOS: {conditions.get("pcos")}, Anemia: {conditions.get("anemia")}
+        Osteoporosis: {conditions.get("osteoporosis")}, IBS: {conditions.get("ibs")}, GERD: {conditions.get("gerd")}
 
-        Health Metrics:
-        Age: {metrics.age}, BMI: {metrics.bmi}, BMR: {metrics.bmr}, TDEE: {metrics.tdee}
-        Body Fat Percentage: {metrics.bfp}, Lean Body Mass: {metrics.lbm}, Muscle Mass: {metrics.muscle_mass}
-        Visceral Fat: {metrics.visceral_fat}, Waist-Hip Ratio: {metrics.whr}, Metabolic Age: {metrics.metabolic_age}
-        Hydration Level: {metrics.hydration_level}, Protein Intake: {metrics.protein_intake}, Macro Nutrients: {metrics.macro_nutrients}
-        Micro Nutrients: {metrics.micro_nutrients}, Energy Surplus/Deficit: {metrics.energy_surplus_deficit}
-        Bone Mineral Density: {metrics.bmd}, Max Heart Rate: {metrics.max_heart_rate}, Electrolyte Balance: {metrics.electrolyte_balance}
-        Skeletal Mass: {metrics.skeletal_mass}, Sleep Score: {metrics.sleep_score}, Fiber Intake: {metrics.fiber}
-        """        
+        Metrics:
+        BMI: {metrics.get("bmi")}, BMR: {metrics.get("bmr")}, TDEE: {metrics.get("tdee")}
+        Body Fat Percentage: {metrics.get("bfp")}, Hydration Level: {metrics.get("hydration_level")}
+        Muscle Mass: {metrics.get("muscle_mass")}, Sleep Score: {metrics.get("sleep_score")}, Fiber Intake: {metrics.get("fiber")}
+        Protein Intake: {metrics.get("protein_intake")}, Macro Nutrients: {metrics.get("macro_nutrients")}, Micro Nutrients: {metrics.get("micro_nutrients")}
+        Energy Surplus/Deficit: {metrics.get("energy_surplus_deficit")}, Electrolyte Balance: {metrics.get("electrolyte_balance")}
+
+        """    
         # Retrieve last 10 messages from PostgreSQL chat history table
         history = await conn.fetch("SELECT message FROM chat_history WHERE email = $1 ORDER BY timestamp DESC LIMIT 10", email)
 
@@ -573,9 +560,6 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
             *Indian Nutrition Database*:
             {retrieved_context}
 
-            *Previous Conversation*:
-            {conversation_history}
-
             *User's Current Message*:
             {user_message}
 
@@ -588,7 +572,6 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
         bot_response = chain.invoke({
             "user_context": user_context,
             "retrieved_context": retrieved_context,
-            "conversation_history": conversation_history,
             "user_message": chat.message
         })
 
