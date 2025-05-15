@@ -17,7 +17,7 @@ import health_metrics
 import asyncpg
 import uuid
 import bcrypt 
-
+import numpy as np
 import os
 import json
 import faiss
@@ -41,30 +41,8 @@ LLM = ChatNVIDIA(
   max_tokens=1024,
 )
 
-
-# Load FAISS index
-index = faiss.read_index("food_dataset/index.faiss")
-
-# Load texts from JSON
-with open("food_dataset/index.json", "r", encoding="utf-8") as f:
-    texts = json.load(f)
-
-# Convert to LangChain documents
-documents = [Document(page_content=txt) for txt in texts]
-
-# Create docstore and ids
-docstore = InMemoryDocstore(dict(zip([str(i) for i in range(len(texts))], documents)))
-index_to_docstore_id = {i: str(i) for i in range(len(texts))}
-
 # Build FAISS vectorstore manually — no pickle, no deserialization flag needed
 embedding = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-
-faiss_index = FAISS(
-    embedding_function=embedding,
-    index=index,
-    docstore=docstore,
-    index_to_docstore_id=index_to_docstore_id,
-)
 
 # Mount the static directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -255,6 +233,7 @@ async def add_personal_details(details: PersonalDetails, session_id: str = Cooki
         await conn.close()
 
         await calculate_and_store_health_metrics(email)
+        await update_faiss_for_user(email)
 
         return {"message": "Personal details added successfully."}
 
@@ -305,6 +284,7 @@ async def add_preferences(preferences: Preferences, session_id: str = Cookie(Non
         await conn.close()
 
         await calculate_and_store_health_metrics(email)
+        await update_faiss_for_user(email)
 
         return {"message": "Food preferences saved successfully."}
 
@@ -339,6 +319,7 @@ async def add_health_conditions(health_conditions: HealthConditions, session_id:
         await conn.close()
 
         await calculate_and_store_health_metrics(email)
+        await update_faiss_for_user(email)
 
         return {"message": "Health conditions saved successfully."}
 
@@ -422,7 +403,56 @@ async def calculate_and_store_health_metrics(email: str):
 
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Error calculating or storing health metrics.")    
+        raise HTTPException(status_code=500, detail="Error calculating or storing health metrics.") 
+
+os.makedirs("user_embeddings", exist_ok=True)
+
+async def update_faiss_for_user(email: str):
+    conn = await connect_db()
+    
+    # 1. Fetch combined data
+    personal = await conn.fetchrow("SELECT * FROM personal_details WHERE email=$1", email)
+    preferences = await conn.fetchrow("SELECT * FROM preferences WHERE email=$1", email)
+    health = await conn.fetchrow("SELECT * FROM health_conditions WHERE email=$1", email)
+    await conn.close()
+
+    # 2. Convert to readable text
+    user_profile_text = f"""
+    Personal Info: {dict(personal)}
+    Preferences: {dict(preferences)}
+    Health Conditions: {dict(health)}
+    """
+
+    # Embed using HuggingFaceEmbeddings
+    vector = embedding.embed_documents([user_profile_text])[0]
+    vector = np.array(vector).astype("float32").reshape(1, -1)
+
+    # Load or initialize FAISS index
+    if os.path.exists("user_embeddings/index.faiss"):
+        index = faiss.read_index("user_embeddings/index.faiss")
+        with open("user_embeddings/index.json", "r", encoding="utf-8") as f:
+            text_data = json.load(f)
+    else:
+        index = faiss.IndexFlatL2(vector.shape[1])
+        text_data = []
+
+    # If the user already exists, remove their old vector
+    if any(email in t for t in text_data):
+        idx = next(i for i, t in enumerate(text_data) if email in t)
+        index.remove_ids(np.array([idx]))
+        text_data.pop(idx)
+
+    # Add new vector
+    index.add(vector)
+    text_data.append(user_profile_text)
+
+    # Save everything
+    faiss.write_index(index, "user_embeddings/index.faiss")
+    with open("user_embeddings/index.json", "w", encoding="utf-8") as f:
+        json.dump(text_data, f, ensure_ascii=False, indent=2)
+
+    print(f"FAISS index updated for user: {email}")
+
     
 @app.get("/personal-details/")
 async def get_personal_details(session_id: str = Cookie(None)):
@@ -492,51 +522,63 @@ async def get_health_conditions(session_id: str = Cookie(None)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error fetching health conditions.")       
+
+def load_faiss_index():
     
+    # Load FAISS index
+    food_index = faiss.read_index("food_dataset/index.faiss")
+    user_index = faiss.read_index("user_embeddings/index.faiss")
+
+    # Load texts from JSON
+    with open("food_dataset/index.json", "r", encoding="utf-8") as f:
+        food_texts = json.load(f)
+
+    with open("user_embeddings/index.json", "r", encoding="utf-8") as f:
+        user_texts = json.load(f)
+
+    # Convert to LangChain Documents
+    food_docs = [Document(page_content=txt) for txt in food_texts]
+    user_docs = [Document(page_content=txt) for txt in user_texts]
+
+    # Build individual docstores
+    food_docstore = InMemoryDocstore(dict(zip([f"food_{i}" for i in range(len(food_docs))], food_docs)))
+    user_docstore = InMemoryDocstore(dict(zip([f"user_{i}" for i in range(len(user_docs))], user_docs)))
+
+    # Index-to-ID mapping
+    food_index_map = {i: f"food_{i}" for i in range(len(food_docs))}
+    user_index_map = {i: f"user_{i}" for i in range(len(user_docs))}
+
+    # Create FAISS instances
+    food_faiss = FAISS(
+        embedding_function=embedding,
+        index=food_index,
+        docstore=food_docstore,
+        index_to_docstore_id=food_index_map,
+    )
+
+    user_faiss = FAISS(
+        embedding_function=embedding,
+        index=user_index,
+        docstore=user_docstore,
+        index_to_docstore_id=user_index_map,
+    )
+
+    return food_faiss, user_faiss
+
 @app.post("/chat/")
 async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
     email = await validate_session(session_id)
 
+    # Load FAISS indexes
+    food_faiss, user_faiss = load_faiss_index()
+
     try:
-        # Connect to PostgreSQL
-        conn = await connect_db()
-
-        # Retrieve user data from PostgreSQL
-        personal = await conn.fetchrow("SELECT * FROM personal_details WHERE email = $1", email)
-        prefs = await conn.fetchrow("SELECT * FROM preferences WHERE email = $1", email)
-        conditions = await conn.fetchrow("SELECT * FROM health_conditions WHERE email = $1", email)
-        metrics = await conn.fetchrow("SELECT * FROM health_metrics WHERE email = $1", email)
-
-       # Build user context
-        user_context = f"""
-        Personal Details:
-        Name: {personal.get("name")}, Age: {health_metrics.calculate_age(personal.get("dateofbirth"))}, Gender: {personal.get("gender")}
-        Height: {personal.get("height")} cm, Weight: {personal.get("weight")} kg, Waist: {personal.get("waist")} cm
-
-        Preferences:
-        Food Preference: {prefs.get("foodpreference")}, Snack Preference: {prefs.get("snackpreferences")}, Meal Timings: {prefs.get("mealtimings")}
-        Activity Level: {prefs.get("activitylevel")}, Fitness Goal: {prefs.get("fitnessgoal")}, Cultural Preferences: {prefs.get("culturalpreferences")}, Cuisine Preferences: {prefs.get("cuisinepreferences")}
-        Spicy Food Tolerance: {prefs.get("spicyfoodtolerance")}, Preferred Meal Type: {prefs.get("preferredmealtype")}
-        Favorite Meal: {prefs.get("favoritemeal")}, Meal Frequency: {prefs.get("mealfrequency")}, Sweet Preference: {prefs.get("sweetpreference")}
-
-        Health Conditions:
-        Allergies: {conditions.get("allergies")}, Diabetes: {conditions.get("diabetes")}, Hypertension: {conditions.get("hypertension")}
-        Other: {conditions.get("otherconditions")}, PCOS: {conditions.get("pcos")}, Anemia: {conditions.get("anemia")}
-        Osteoporosis: {conditions.get("osteoporosis")}, IBS: {conditions.get("ibs")}, GERD: {conditions.get("gerd")}
-
-        Metrics:
-        BMI: {metrics.get("bmi")}, BMR: {metrics.get("bmr")}, TDEE: {metrics.get("tdee")}
-        Body Fat Percentage: {metrics.get("bfp")}, Hydration Level: {metrics.get("hydration_level")}
-        Muscle Mass: {metrics.get("muscle_mass")}, Sleep Score: {metrics.get("sleep_score")}, Fiber Intake: {metrics.get("fiber")}
-        Protein Intake: {metrics.get("protein_intake")}, Macro Nutrients: {metrics.get("macro_nutrients")}, Micro Nutrients: {metrics.get("micro_nutrients")}
-        Energy Surplus/Deficit: {metrics.get("energy_surplus_deficit")}, Electrolyte Balance: {metrics.get("electrolyte_balance")}
-
-        """    
-
         # Search FAISS index
-        retrieved_docs = faiss_index.similarity_search(chat.message, k=3)
+        user_docs = user_faiss.similarity_search(chat.message, k=1)
+        retrieved_docs = food_faiss.similarity_search(chat.message, k=3)
 
         # Combine the retrieved documents into a string
+        user_context = "\n\n".join([doc.page_content for doc in user_docs])
         retrieved_context = "\n\n".join([doc.page_content for doc in retrieved_docs])
 
         # Create the prompt
@@ -577,7 +619,5 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Error processing the chat request.")  
-    finally:
-        await conn.close() 
 
 # Run the application using: uvicorn main:app --reload      
