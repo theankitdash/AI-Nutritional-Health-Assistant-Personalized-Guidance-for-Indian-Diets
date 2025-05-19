@@ -9,6 +9,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_core.documents import Document
+from langchain_core.chat_history import InMemoryChatMessageHistory
 from dotenv import load_dotenv
 from datetime import datetime, timezone, timedelta
 from db_connect import connect_db
@@ -40,6 +41,9 @@ LLM = ChatNVIDIA(
   top_p=1,
   max_tokens=1024,
 )
+
+# A dict to hold chat histories per session (in-memory, reset on app restart)
+chat_histories = {}
 
 # Build FAISS vectorstore manually — no pickle, no deserialization flag needed
 embedding = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
@@ -569,6 +573,12 @@ def load_faiss_index():
 async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
     email = await validate_session(session_id)
 
+    # Initialize chat history for this session if not present
+    if session_id not in chat_histories:
+        chat_histories[session_id] = InMemoryChatMessageHistory()
+
+    chat_history = chat_histories[session_id]
+
     # Load FAISS indexes
     food_faiss, user_faiss = load_faiss_index()
 
@@ -580,6 +590,16 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
         # Combine the retrieved documents into a string
         user_context = "\n\n".join([doc.page_content for doc in user_docs])
         retrieved_context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+
+        # Add user's message to chat history
+        chat_history.add_user_message(chat.message)
+        #print(f"[ChatHistory] Added user message: {chat.message}")
+
+        # Convert chat history to formatted string for prompt
+        conversation_history = "\n".join(
+            f"{'User' if msg.type == 'human' else 'Assistant'}: {msg.content}"
+            for msg in chat_history.messages
+        )
 
         # Create the prompt
         prompt_template = PromptTemplate(
@@ -594,6 +614,9 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
             *Indian Nutrition Database*:
             {retrieved_context}
 
+            *Conversation History*:
+            {conversation_history}
+
             *User's Current Message*:
             {user_message}
 
@@ -606,13 +629,18 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
         bot_response = chain.invoke({
             "user_context": user_context,
             "retrieved_context": retrieved_context,
+            "conversation_history": conversation_history,
             "user_message": chat.message
         })
 
         if isinstance(bot_response, BaseMessage):
             response = bot_response.content
+            chat_history.add_ai_message(response)
+            #print(f"[ChatHistory] Added AI message: {response}")
         else:
             response = str(bot_response)
+            chat_history.add_ai_message(response)
+            #print(f"[ChatHistory] Added AI message: {response}")
 
         return {"bot_response": response}
 
