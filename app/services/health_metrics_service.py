@@ -1,6 +1,6 @@
-from db_connect import connect_db
-import health_metrics
-from models import (PersonalDetails, Preferences, HealthConditions, HealthMetrics)
+from app.db_connect import connect_db
+import app.health_metrics as health_metrics
+from app.models import (PersonalDetails, Preferences, HealthConditions, HealthMetrics)
 from fastapi import HTTPException
 import traceback
 

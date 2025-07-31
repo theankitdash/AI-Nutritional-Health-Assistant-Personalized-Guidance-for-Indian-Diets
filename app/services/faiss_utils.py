@@ -1,5 +1,5 @@
 import os
-from db_connect import connect_db
+from app.db_connect import connect_db
 from langchain_huggingface import HuggingFaceEmbeddings
 import faiss
 import json

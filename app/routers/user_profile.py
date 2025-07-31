@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Cookie
-from models import (PersonalDetails, Preferences, HealthConditions)
-from routers.auth import validate_session
-from db_connect import connect_db
-from services.health_metrics_service import calculate_and_store_health_metrics
-from services.faiss_utils import update_faiss_for_user
+from app.models import (PersonalDetails, Preferences, HealthConditions)
+from app.routers.auth import validate_session
+from app.db_connect import connect_db
+from app.services.health_metrics_service import calculate_and_store_health_metrics
+from app.services.faiss_utils import update_faiss_for_user
 import traceback
 
 router = APIRouter()

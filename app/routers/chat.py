@@ -7,8 +7,8 @@ from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
-from routers.auth import validate_session
-from models import ChatRequest
+from app.routers.auth import validate_session
+from app.models import ChatRequest
 from dotenv import load_dotenv
 import os
 import faiss

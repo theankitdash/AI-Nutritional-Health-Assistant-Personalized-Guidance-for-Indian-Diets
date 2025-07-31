@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Request, Cookie
 from fastapi.responses import JSONResponse
-from models import (UserCredentials, PasswordUpdate)
+from app.models import (UserCredentials, PasswordUpdate)
 import uuid
 import bcrypt 
 from datetime import datetime, timezone, timedelta
-from db_connect import connect_db
+from app.db_connect import connect_db
 import asyncpg
 import traceback
 
