@@ -6,12 +6,12 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      - postgres-db
     env_file:
       - .env
 
 
-  db:
+  postgres-db:
     image: postgres:17
     container_name: postgres-db
     environment:
