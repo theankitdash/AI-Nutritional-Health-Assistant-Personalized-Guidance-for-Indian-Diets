@@ -121,16 +121,6 @@ async def connect_db():
             expiration TIMESTAMPTZ NOT NULL,
             FOREIGN KEY (email) REFERENCES credentials(email)
         );
-    """)
-
-    await conn.execute("""
-        CREATE TABLE IF NOT EXISTS chat_history (
-            id SERIAL PRIMARY KEY,
-            email TEXT NOT NULL,
-            message TEXT NOT NULL,
-            timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            FOREIGN KEY (email) REFERENCES credentials(email)
-        ); 
-    """)              
+    """)         
 
     return conn
