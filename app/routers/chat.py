@@ -37,14 +37,14 @@ chat_histories = {}
 def load_faiss_index():
     
     # Load FAISS index
-    food_index = faiss.read_index("food_dataset/index.faiss")
-    user_index = faiss.read_index("user_embeddings/index.faiss")
+    food_index = faiss.read_index("app/food_dataset/index.faiss")
+    user_index = faiss.read_index("app/user_embeddings/index.faiss")
 
     # Load texts from JSON
-    with open("food_dataset/index.json", "r", encoding="utf-8") as f:
+    with open("app/food_dataset/index.json", "r", encoding="utf-8") as f:
         food_texts = json.load(f)
 
-    with open("user_embeddings/index.json", "r", encoding="utf-8") as f:
+    with open("app/user_embeddings/index.json", "r", encoding="utf-8") as f:
         user_texts = json.load(f)
 
     # Convert to LangChain Documents

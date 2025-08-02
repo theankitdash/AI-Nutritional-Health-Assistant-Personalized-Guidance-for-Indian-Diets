@@ -8,7 +8,7 @@ import numpy as np
 # Build FAISS vectorstore manually — no pickle, no deserialization flag needed
 embedding = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-os.makedirs("user_embeddings", exist_ok=True)
+os.makedirs("app/user_embeddings", exist_ok=True)
 
 async def update_faiss_for_user(email: str):
     conn = await connect_db()
@@ -31,9 +31,9 @@ async def update_faiss_for_user(email: str):
     vector = np.array(vector).astype("float32").reshape(1, -1)
 
     # Load or initialize FAISS index
-    if os.path.exists("user_embeddings/index.faiss"):
-        index = faiss.read_index("user_embeddings/index.faiss")
-        with open("user_embeddings/index.json", "r", encoding="utf-8") as f:
+    if os.path.exists("app/user_embeddings/index.faiss"):
+        index = faiss.read_index("app/user_embeddings/index.faiss")
+        with open("app/user_embeddings/index.json", "r", encoding="utf-8") as f:
             text_data = json.load(f)
     else:
         index = faiss.IndexFlatL2(vector.shape[1])
@@ -50,8 +50,8 @@ async def update_faiss_for_user(email: str):
     text_data.append(user_profile_text)
 
     # Save everything
-    faiss.write_index(index, "user_embeddings/index.faiss")
-    with open("user_embeddings/index.json", "w", encoding="utf-8") as f:
+    faiss.write_index(index, "app/user_embeddings/index.faiss")
+    with open("app/user_embeddings/index.json", "w", encoding="utf-8") as f:
         json.dump(text_data, f, ensure_ascii=False, indent=2)
 
     print(f"FAISS index updated for user: {email}")

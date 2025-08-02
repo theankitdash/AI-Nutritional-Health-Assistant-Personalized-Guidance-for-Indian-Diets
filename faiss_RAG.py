@@ -43,8 +43,8 @@ index = faiss.IndexFlatL2(dimension)
 index.add(np.array(embeddings))
 
 # Save index and texts
-faiss.write_index(index, "food_dataset/index.faiss")
-with open("food_dataset/index.json", "w", encoding="utf-8") as f:
+faiss.write_index(index, "app/food_dataset/index.faiss")
+with open("app/food_dataset/index.json", "w", encoding="utf-8") as f:
     json.dump(texts, f, ensure_ascii=False, indent=2)
 
 print("FAISS index created and saved.")
