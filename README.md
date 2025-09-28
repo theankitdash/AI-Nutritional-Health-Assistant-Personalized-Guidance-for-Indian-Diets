@@ -1,8 +1,6 @@
 # AI Nutritional Health Assistant — Personalized Guidance for Indian Diets
 
 [![Python](https://img.shields.io/badge/python-3.x-blue)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-modern-api-framework-green)](https://fastapi.tiangolo.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A conversational AI nutrition assistant built for Indian diets. It uses **FastAPI**, **LangChain**, and a **RAG (Retrieval-Augmented Generation)** pipeline over **FAISS** to answer **100+ context-aware queries** across multiple Indian regional cuisines, aiming for ~90% accuracy in nutrition guidance.
 
@@ -145,8 +143,6 @@ We welcome dataset improvements, bug fixes, and new regional cuisines.
 ---
 
 ## 📜 License
-
-MIT License.
 Check dataset licenses (e.g., USDA, Indian food tables) for usage compliance.
 
 ---
