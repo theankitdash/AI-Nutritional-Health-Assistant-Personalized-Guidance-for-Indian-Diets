@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Cookie
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_core.chat_history import InMemoryChatMessageHistory
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_core.messages import BaseMessage
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.documents import Document
