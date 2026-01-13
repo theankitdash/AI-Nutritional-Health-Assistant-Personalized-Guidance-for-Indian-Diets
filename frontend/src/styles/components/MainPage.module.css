@@ -1,0 +1,33 @@
+.mainContainer {
+    display: flex;
+    flex: 1;
+    margin-left: 260px;
+    margin-top: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: var(--surface);
+    box-shadow: 0 4px 8px var(--shadow);
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.mainContent {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
+    border-radius: 15px;
+    background-color: var(--surface);
+}
+
+@media (max-width: 768px) {
+    .mainContainer {
+        margin-left: 0;
+        margin-top: 80px;
+    }
+
+    .mainContent {
+        padding: 15px;
+    }
+}

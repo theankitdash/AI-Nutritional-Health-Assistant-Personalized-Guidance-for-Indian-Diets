@@ -4,14 +4,17 @@
 
 A conversational AI nutrition assistant built for Indian diets. It uses **FastAPI**, **LangChain**, and a **RAG (Retrieval-Augmented Generation)** pipeline over **FAISS** to answer **100+ context-aware queries** across multiple Indian regional cuisines, aiming for ~90% accuracy in nutrition guidance.
 
+**NEW**: Now with a modern **Next.js** frontend with TypeScript, React, and responsive design!
+
 ---
 
 ## 🚀 Features
 
 * Personalized nutrition recommendations (calories, macros, micronutrients)
 * Supports regional Indian cuisines (North, South, East, West)
-* Conversational interface — e.g., “What should I eat for lunch in South India under 500 kcal?”
+* Conversational interface — e.g., "What should I eat for lunch in South India under 500 kcal?"
 * Retrieval + LLM architecture: FAISS vector search with curated Indian food datasets
+* Modern Next.js frontend with TypeScript and responsive design
 * Modular and extensible — add new datasets, cuisines, or swap LLMs easily
 
 ---
@@ -20,14 +23,25 @@ A conversational AI nutrition assistant built for Indian diets. It uses **FastAP
 
 ```plaintext
 .
-├── app/                      # FastAPI app, routers, models, etc.
+├── app/                      # FastAPI backend
+│   ├── routers/              # API routes
+│   ├── services/             # Business logic
+│   ├── models.py             # Data models
+│   └── main.py               # FastAPI app with CORS
+├── frontend/                 # Next.js frontend (NEW!)
+│   ├── src/
+│   │   ├── app/              # Next.js pages
+│   │   ├── components/       # React components
+│   │   ├── lib/              # API client & utilities
+│   │   └── styles/           # CSS modules
+│   └── package.json
 ├── dockerfile                # Containerization
-├── docker-compose.yml        # Orchestration (API/DB etc.)
+├── docker-compose.yml        # Orchestration
 ├── faiss_RAG.py              # RAG + FAISS pipeline
-├── food_dataset.*            # Food/nutrition dataset files
-├── usda-food.py              # USDA-based mapping utility
+├── food_dataset.*            # Food/nutrition datasets
 ├── requirements.txt          # Python dependencies
-└── .gitignore
+├── start-servers.bat         # Launch both servers (Windows)
+└── API_CONNECTION_SETUP.md   # API setup guide
 ```
 
 ---
@@ -37,36 +51,75 @@ A conversational AI nutrition assistant built for Indian diets. It uses **FastAP
 ### Prerequisites
 
 * Python 3.9+
+* Node.js 18+ and npm
+* PostgreSQL database
 * (Optional) Docker & Docker Compose
 * (Optional) GPU for faster inference
 
-### Local Setup
+### Quick Start - Run Both Servers
 
-1. Clone the repository:
-   `git clone https://github.com/theankitdash/AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets.git`
-   `cd AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets`
+**Windows Users**:
+```bash
+# Just double-click or run:
+start-servers.bat
+```
 
-2. Create and activate a virtual environment:
-   `python3 -m venv venv`
-   `source venv/bin/activate` (Windows: `venv\Scripts\activate`)
+**Manual Setup**:
 
-3. Install dependencies:
-   `pip install -r requirements.txt`
+#### 1. Backend Setup (FastAPI)
 
-4. Start the FastAPI app:
-   `uvicorn app.main:app --reload`
+```bash
+# Clone and navigate to project
+git clone https://github.com/theankitdash/AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets.git
+cd AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets
 
-Open [http://localhost:8000](http://localhost:8000) to access the API.
+# Create and activate virtual environment
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+# source .venv/bin/activate  # Mac/Linux
 
-### Docker Setup (Optional)
+# Install dependencies
+pip install -r requirements.txt
 
-`docker-compose up --build`
+# Start FastAPI server
+uvicorn app.main:app --reload
+```
 
-This will start the API (and other services if configured) in containers.
+Backend runs at: **http://localhost:8000**
+
+#### 2. Frontend Setup (Next.js)
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start Next.js dev server
+npm run dev
+```
+
+Frontend runs at: **http://localhost:3000**
 
 ---
 
-## 🧠 Usage Examples / API Endpoints
+## 🌐 Using the Application
+
+1. **Open your browser**: Navigate to `http://localhost:3000`
+
+2. **Register/Login**: Create an account or login with existing credentials
+
+3. **Set up your profile**:
+   - Personal Details (height, weight, etc.)
+   - Preferences (diet type, cuisines, activity level)
+   - Health Conditions (allergies, medical conditions)
+
+4. **Start chatting**: Ask nutrition questions in the chat interface!
+
+---
+
+## 🧠 API Endpoints
 
 **Example Endpoints:**
 

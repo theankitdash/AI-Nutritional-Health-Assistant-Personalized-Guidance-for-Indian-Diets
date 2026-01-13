@@ -1,0 +1,88 @@
+.chatContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 20px;
+}
+
+.chatHeader {
+    padding: 20px;
+    background-color: #f1f1f1;
+    color: var(--text);
+    border-radius: 12px;
+    font-size: 18px;
+}
+
+.chatMessages {
+    flex-grow: 1;
+    padding: 15px;
+    background-color: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.chatMessage {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chatMessage.user {
+    justify-content: flex-end;
+}
+
+.chatMessage.bot {
+    justify-content: flex-start;
+}
+
+.messageContent {
+    padding: 12px;
+    max-width: 75%;
+    border-radius: 18px;
+    background-color: #e5e5e5;
+    word-wrap: break-word;
+    box-shadow: 0 3px 8px var(--shadow);
+}
+
+.chatMessage.user .messageContent {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.chatMessage.bot .messageContent {
+    background-color: #f1f1f1;
+    color: var(--text);
+}
+
+.chatForm {
+    display: flex;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.chatForm input[type="text"] {
+    padding: 12px 20px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    flex-grow: 1;
+    font-size: 16px;
+}
+
+.chatForm button {
+    padding: 12px 18px;
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.chatForm button:hover {
+    background-color: var(--primary-hover);
+}

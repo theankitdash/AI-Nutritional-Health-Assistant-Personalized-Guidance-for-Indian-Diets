@@ -1,0 +1,109 @@
+.modal {
+    display: flex;
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modalContent {
+    background-color: var(--surface);
+    padding: 25px;
+    min-width: 300px;
+    max-width: 500px;
+    max-height: 90vh;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px var(--shadow);
+    position: relative;
+    overflow-y: auto;
+}
+
+.modalContent h2 {
+    margin-bottom: 20px;
+    font-size: 20px;
+    color: var(--text);
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    color: #aaa;
+    cursor: pointer;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.close:hover {
+    color: var(--text);
+}
+
+.setting {
+    margin-bottom: 20px;
+}
+
+.setting label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.setting>div {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.setting input[type="text"],
+.setting input[type="password"],
+.setting input[type="date"],
+.setting input[type="number"],
+.setting select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+}
+
+.setting input[type="checkbox"],
+.setting input[type="radio"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.setting>div label {
+    display: inline;
+    margin: 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.button {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 10px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.button:hover {
+    background-color: var(--primary-hover);
+}
+
+.feedback {
+    margin-top: 5px;
+    font-size: 14px;
+}
