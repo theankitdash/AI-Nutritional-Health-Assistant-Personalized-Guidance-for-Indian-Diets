@@ -1,7 +1,6 @@
 from app.db_connect import connect_db
 import app.health_metrics as health_metrics
 from app.models import (PersonalDetails, Preferences, HealthConditions, HealthMetrics)
-from fastapi import HTTPException
 import traceback
 
 async def calculate_and_store_health_metrics(email: str):
@@ -15,7 +14,20 @@ async def calculate_and_store_health_metrics(email: str):
 
         if not personal_details or not preferences or not health_conditions:
             await conn.close()
-            raise HTTPException(status_code=404, detail="User profile is incomplete. Please update all the details.")
+            return
+        
+        if any(v is None for v in [
+            personal_details["height"],
+            personal_details["weight"],
+            personal_details["dateofbirth"],
+            personal_details["gender"],
+            personal_details["waist"],
+            preferences["activitylevel"],
+            preferences["fitnessgoal"],
+            preferences["averagesleep"],
+        ]):
+            await conn.close()
+            return
 
         # Decode data into appropriate classes
         personal_details_data = PersonalDetails(**personal_details)
@@ -78,6 +90,9 @@ async def calculate_and_store_health_metrics(email: str):
 
         await conn.close()
 
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Error calculating or storing health metrics.") 
+        return 
+    
+    finally:
+        await conn.close()

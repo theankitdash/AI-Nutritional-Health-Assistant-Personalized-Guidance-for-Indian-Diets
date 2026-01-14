@@ -7,7 +7,7 @@ from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
-from app.routers.auth import validate_session
+from app.routers.auth import get_session_email
 from app.models import ChatRequest
 from dotenv import load_dotenv
 import os
@@ -78,7 +78,7 @@ def load_faiss_index():
 
 @router.post("/chat/")
 async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
-    email = await validate_session(session_id)
+    email = await get_session_email(session_id)
 
     # Initialize chat history for this session if not present
     if session_id not in chat_histories:

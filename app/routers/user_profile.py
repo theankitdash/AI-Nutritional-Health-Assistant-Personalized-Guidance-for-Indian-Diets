@@ -1,17 +1,19 @@
 from fastapi import APIRouter, HTTPException, Cookie
 from app.models import (PersonalDetails, Preferences, HealthConditions)
-from app.routers.auth import validate_session
+from app.routers.auth import get_session_email
 from app.db_connect import connect_db
 from app.services.health_metrics_service import calculate_and_store_health_metrics
 from app.services.faiss_utils import update_faiss_for_user
 import traceback
+import asyncpg
 
 router = APIRouter()
 
 @router.post("/personal-details/")
 async def add_personal_details(details: PersonalDetails, session_id: str = Cookie(None)):
-    email = await validate_session(session_id)
-
+    email = await get_session_email(session_id)
+    
+    conn = None
     try:
         conn = await connect_db()
 
@@ -28,22 +30,34 @@ async def add_personal_details(details: PersonalDetails, session_id: str = Cooki
                 weight = EXCLUDED.weight,
                 waist = EXCLUDED.waist;
         """, email, *details.model_dump().values())
-
-        await conn.close()
-
-        await calculate_and_store_health_metrics(email)
-        await update_faiss_for_user(email)
-
-        return {"message": "Personal details added successfully."}
-
+    
+        try:
+            await calculate_and_store_health_metrics(email)
+        except Exception as e:
+            traceback.print_exc()
+    
+    except asyncpg.PostgresError as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to save personal details.")
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Failed to save personal details.")    
+        raise HTTPException(status_code=500, detail="Unexpected error occurred.")
+    finally:
+        if conn:
+            await conn.close()
+
+    try:
+        await update_faiss_for_user(email)
+    except Exception as e:
+        traceback.print_exc()
+
+    return {"message": "Personal details added successfully."}
     
 @router.post("/preferences/")
 async def add_preferences(preferences: Preferences, session_id: str = Cookie(None)):
-    email = await validate_session(session_id)
+    email = await get_session_email(session_id)
 
+    conn = None
     try:
         conn = await connect_db()
 
@@ -80,23 +94,35 @@ async def add_preferences(preferences: Preferences, session_id: str = Cookie(Non
                 supplementfrequency = EXCLUDED.supplementfrequency;
         """, email, *preferences.model_dump().values())
 
-        await conn.close()
-
-        await calculate_and_store_health_metrics(email)
-        await update_faiss_for_user(email)
-
-        return {"message": "Food preferences saved successfully."}
-
-    except Exception:
+        try:
+            await calculate_and_store_health_metrics(email)
+        except Exception as e:
+            traceback.print_exc()
+    
+    except asyncpg.PostgresError as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Failed to save preferences.")    
+        raise HTTPException(status_code=500, detail="Failed to save preferences.")
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Unexpected error occurred.")
+    finally:
+        if conn:
+            await conn.close()
+
+    try:
+        await update_faiss_for_user(email)
+    except Exception as e:
+        traceback.print_exc()
+
+    return {"message": "Food preferences saved successfully."}
     
 @router.post("/health-conditions/")
 async def add_health_conditions(health_conditions: HealthConditions, session_id: str = Cookie(None)):
-    email = await validate_session(session_id)
+    email = await get_session_email(session_id)
 
     data = health_conditions.model_dump(exclude_none=True)
 
+    conn = None
     try:
         conn = await connect_db()
 
@@ -113,84 +139,102 @@ async def add_health_conditions(health_conditions: HealthConditions, session_id:
             ON CONFLICT (email)
             DO UPDATE SET {updates};
         """
-
         await conn.execute(query, *values)
-        await conn.close()
+    
+        try:
+            await calculate_and_store_health_metrics(email)
+        except Exception as e:
+            traceback.print_exc()
+            # Log but don't fail the main request
 
-        await calculate_and_store_health_metrics(email)
-        await update_faiss_for_user(email)
-
-        return {"message": "Health conditions saved successfully."}
-
+    except asyncpg.PostgresError as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to save health conditions.")
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Failed to save health conditions.")    
+        raise HTTPException(status_code=500, detail="Unexpected error occurred.")
+    finally:
+        if conn:
+            await conn.close()
+
+    try:
+        await update_faiss_for_user(email)
+    except Exception as e:
+        traceback.print_exc()
+
+    return {"message": "Health conditions saved successfully."}
     
 @router.get("/personal-details/")
 async def get_personal_details(session_id: str = Cookie(None)):
-    email = await validate_session(session_id)
+    email = await get_session_email(session_id)
 
+    conn = None
     try:
-        # Connect to PostgreSQL
         conn = await connect_db()
 
-        # Retrieve personal details from PostgreSQL
         personal_details = await conn.fetchrow("SELECT * FROM personal_details WHERE email = $1", email)
 
-        # Close the connection
-        await conn.close()
-
         if not personal_details:
-            raise HTTPException(status_code=404, detail="User not found.")
-
-        # Return the personal details
+            return {}
+        
         return {key: value for key, value in personal_details.items()}
-
+        
+    except asyncpg.PostgresError as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Error fetching personal details.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error fetching personal details.")    
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Unexpected error occurred.")
+    finally:
+        if conn:
+            await conn.close() 
     
 @router.get("/preferences/")
 async def get_preferences(session_id: str = Cookie(None)):
-    email = await validate_session(session_id)
+    email = await get_session_email(session_id)
 
+    conn = None
     try:
-        # Connect to PostgreSQL
         conn = await connect_db()
 
-        # Retrieve preferences from PostgreSQL
         preferences = await conn.fetchrow("SELECT * FROM preferences WHERE email = $1", email)
 
-        # Close the connection
-        await conn.close()
-
         if not preferences:
-            raise HTTPException(status_code=404, detail="Preferences not found.")
+            return {}
 
-        # Return the preferences
         return {key: value for key, value in preferences.items()}
 
+    except asyncpg.PostgresError as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Error fetching preferences.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error fetching preferences.") 
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Unexpected error occurred.")
+    finally:
+        if conn:
+            await conn.close() 
 
 @router.get("/health-conditions/")
 async def get_health_conditions(session_id: str = Cookie(None)):
-    email = await validate_session(session_id)
+    email = await get_session_email(session_id)
 
+    conn = None
     try:
-        # Connect to PostgreSQL
         conn = await connect_db()
 
-        # Retrieve health conditions from PostgreSQL
         health_conditions = await conn.fetchrow("SELECT * FROM health_conditions WHERE email = $1", email)
 
-        # Close the connection
-        await conn.close()
-
         if not health_conditions:
-            raise HTTPException(status_code=404, detail="Health conditions not found.")
+            return {}
 
-        # Return the health conditions
         return {key: value for key, value in health_conditions.items()}
 
+    except asyncpg.PostgresError as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Error fetching health conditions.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error fetching health conditions.")       
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Unexpected error occurred.")
+    finally:
+        if conn:
+            await conn.close()  
