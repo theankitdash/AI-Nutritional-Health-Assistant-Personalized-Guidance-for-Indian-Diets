@@ -54,24 +54,24 @@ export const logout = () =>
 
 // Personal Details APIs
 export const getPersonalDetails = () =>
-    fetchData<PersonalDetails>('/personal-details', 'GET');
+    fetchData<PersonalDetails>('/personal-details/', 'GET');
 
 export const savePersonalDetails = (data: PersonalDetails) =>
-    fetchData('/personal-details', 'POST', data);
+    fetchData('/personal-details/', 'POST', data);
 
 // Preferences APIs
 export const getPreferences = () =>
-    fetchData<Preferences>('/preferences', 'GET');
+    fetchData<Preferences>('/preferences/', 'GET');
 
 export const savePreferences = (data: Preferences) =>
-    fetchData('/preferences', 'POST', data);
+    fetchData('/preferences/', 'POST', data);
 
 // Health Conditions APIs
 export const getHealthConditions = () =>
-    fetchData<HealthConditions>('/health-conditions', 'GET');
+    fetchData<HealthConditions>('/health-conditions/', 'GET');
 
 export const saveHealthConditions = (data: HealthConditions) =>
-    fetchData('/health-conditions', 'POST', data);
+    fetchData('/health-conditions/', 'POST', data);
 
 // Account Settings APIs
 export const updatePassword = (data: UpdatePasswordData) =>

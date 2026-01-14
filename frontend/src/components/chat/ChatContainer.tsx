@@ -15,6 +15,7 @@ interface Message {
 export default function ChatContainer() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [welcomeName, setWelcomeName] = useState('User');
+    const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -38,6 +39,7 @@ export default function ChatContainer() {
     const handleSendMessage = async (message: string) => {
         // Add user message to chat
         setMessages((prev) => [...prev, { sender: 'user', text: message }]);
+        setIsLoading(true);
 
         try {
             // Send message to backend and get response
@@ -49,8 +51,10 @@ export default function ChatContainer() {
         } catch (error: any) {
             setMessages((prev) => [
                 ...prev,
-                { sender: 'bot', text: 'Error: Unable to connect to the server.' },
+                { sender: 'bot', text: `Sorry, I encountered an error: ${error.message || 'Unable to connect to the server'}` },
             ]);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -60,14 +64,20 @@ export default function ChatContainer() {
                 <h2>Welcome, {welcomeName}</h2>
             </div>
 
+
             <div className={styles.chatMessages}>
                 {messages.map((msg, index) => (
                     <ChatMessage key={index} sender={msg.sender} text={msg.text} />
                 ))}
+                {isLoading && (
+                    <div style={{ textAlign: 'center', padding: '1rem', color: '#666' }}>
+                        Bot is typing...
+                    </div>
+                )}
                 <div ref={messagesEndRef} />
             </div>
 
-            <ChatForm onSendMessage={handleSendMessage} />
+            <ChatForm onSendMessage={handleSendMessage} disabled={isLoading} />
         </div>
     );
 }

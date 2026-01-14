@@ -31,6 +31,10 @@ LLM = ChatNVIDIA(
 # Build FAISS vectorstore manually — no pickle, no deserialization flag needed
 embedding = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
+# Global variables to store FAISS indexes (loaded once at startup)
+food_faiss = None
+user_faiss = None
+
 # A dict to hold chat histories per session (in-memory, reset on app restart)
 chat_histories = {}
 
@@ -76,8 +80,15 @@ def load_faiss_index():
 
     return food_faiss, user_faiss
 
+def initialize_faiss_indexes():
+    """Initialize FAISS indexes at startup. Called once when app starts."""
+    global food_faiss, user_faiss
+    food_faiss, user_faiss = load_faiss_index()
+
 @router.post("/chat/")
 async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
+    global food_faiss, user_faiss
+    
     email = await get_session_email(session_id)
 
     # Initialize chat history for this session if not present
@@ -86,8 +97,8 @@ async def chat_with_bot(chat: ChatRequest, session_id: str = Cookie(None)):
 
     chat_history = chat_histories[session_id]
 
-    # Load FAISS indexes
-    food_faiss, user_faiss = load_faiss_index()
+    # Use pre-loaded FAISS indexes (loaded at startup)
+    # No need to load on every request - significant performance improvement
 
     try:
         # Search FAISS index

@@ -36,6 +36,11 @@ export default function AccountSettingsModal({
             return;
         }
 
+        if (currentPassword === newPassword) {
+            alert('New password must be different from current password.');
+            return;
+        }
+
         try {
             await updatePassword({
                 current_password: currentPassword,

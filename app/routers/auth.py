@@ -125,6 +125,7 @@ async def login_user(credentials: UserCredentials):
             credentials.password.encode("utf-8"),
             user["password"].encode("utf-8")
         ):
+            record_login_attempt(credentials.email)  
             raise HTTPException(status_code=401, detail="Invalid email or password.")
 
         session_id = str(uuid.uuid4())
@@ -198,6 +199,13 @@ async def update_password(password_data: PasswordUpdate, session_id: str = Cooki
             record["password"].encode("utf-8")
         ):
             raise HTTPException(status_code=401, detail="Current password incorrect.")
+
+        # Check if new password is same as current password
+        if bcrypt.checkpw(
+            password_data.new_password.encode("utf-8"),
+            record["password"].encode("utf-8")
+        ):
+            raise HTTPException(status_code=400, detail="New password must be different from current password.")
 
         hashed_new_password = bcrypt.hashpw(password_data.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 

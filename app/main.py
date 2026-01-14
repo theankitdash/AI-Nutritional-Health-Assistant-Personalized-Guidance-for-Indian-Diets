@@ -16,6 +16,14 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
+# Load FAISS indexes once at startup for better performance
+@app.on_event("startup")
+async def startup_event():
+    """Load FAISS indexes at startup to avoid loading on every request"""
+    print("Loading FAISS indexes...")
+    chat.initialize_faiss_indexes()
+    print("FAISS indexes loaded successfully!")
+
 app.include_router(auth.router)
 app.include_router(user_profile.router)
 app.include_router(chat.router)

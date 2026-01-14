@@ -79,6 +79,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                 onAuthSuccess(true); // true = is a registration
             } catch (error: any) {
                 console.error('Error during registration:', error);
+                alert(`Registration failed: ${error.message}`);
             }
         } else {
             try {

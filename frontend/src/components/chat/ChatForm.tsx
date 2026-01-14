@@ -1,20 +1,21 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
+import React, { useState } from 'react';
 import styles from '@/styles/components/Chat.module.css';
 
 interface ChatFormProps {
     onSendMessage: (message: string) => void;
+    disabled?: boolean;
 }
 
-export default function ChatForm({ onSendMessage }: ChatFormProps) {
-    const [message, setMessage] = useState('');
+export default function ChatForm({ onSendMessage, disabled = false }: ChatFormProps) {
+    const [input, setInput] = useState('');
 
-    const handleSubmit = (e: FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (message.trim()) {
-            onSendMessage(message);
-            setMessage('');
+        if (input.trim() && !disabled) {
+            onSendMessage(input);
+            setInput('');
         }
     };
 
@@ -22,12 +23,19 @@ export default function ChatForm({ onSendMessage }: ChatFormProps) {
         <form className={styles.chatForm} onSubmit={handleSubmit}>
             <input
                 type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type a message..."
-                required
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your message..."
+                disabled={disabled}
+                className={styles.chatInput}
             />
-            <button type="submit">Send</button>
+            <button
+                type="submit"
+                disabled={disabled || !input.trim()}
+                className={styles.chatButton}
+            >
+                {disabled ? 'Sending...' : 'Send'}
+            </button>
         </form>
     );
 }

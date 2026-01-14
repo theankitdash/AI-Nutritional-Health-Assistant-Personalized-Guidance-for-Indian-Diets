@@ -13,13 +13,15 @@ export function isStrongPassword(password: string): boolean {
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
     const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const hasNoSpaces = !/\s/.test(password);  // No spaces allowed
 
     return (
         password.length >= minLength &&
         hasUpperCase &&
         hasLowerCase &&
         hasNumbers &&
-        hasSpecialChars
+        hasSpecialChars &&
+        hasNoSpaces
     );
 }
 

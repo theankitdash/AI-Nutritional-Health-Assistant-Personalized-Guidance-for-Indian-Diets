@@ -51,7 +51,7 @@ export interface HealthConditions {
     liverdisease: string;
     lactoseintolerance: string;
     glutensensitivity: string;
-    pcos: string;
+    pcos?: string;  // Optional - only for female users
     anemia: string;
     osteoporosis: string;
     ibs: string;

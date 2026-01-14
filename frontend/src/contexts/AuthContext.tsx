@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const register = async (credentials: RegisterCredentials) => {
         await apiRegister(credentials);
+        await apiLogin(credentials);
         setIsAuthenticated(true);
     };
 
