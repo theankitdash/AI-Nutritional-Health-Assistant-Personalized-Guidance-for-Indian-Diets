@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, user_profile, chat
+from app.services.faiss_service import initialize_faiss_indexes
 
 app = FastAPI()
 
@@ -21,7 +22,7 @@ app.add_middleware(
 async def startup_event():
     """Load FAISS indexes at startup to avoid loading on every request"""
     print("Loading FAISS indexes...")
-    chat.initialize_faiss_indexes()
+    initialize_faiss_indexes()
     print("FAISS indexes loaded successfully!")
 
 app.include_router(auth.router)
