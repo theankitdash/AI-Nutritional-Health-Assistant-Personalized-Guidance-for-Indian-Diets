@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.x-blue)](https://www.python.org/)
 
-A conversational AI nutrition assistant built for Indian diets. It uses **FastAPI**, **LangChain**, and a **RAG (Retrieval-Augmented Generation)** pipeline over **FAISS** to answer **100+ context-aware queries** across multiple Indian regional cuisines, aiming for ~90% accuracy in nutrition guidance.
+A conversational AI nutrition assistant built for Indian diets. It uses **FastAPI**, **LangGraph**, and a **RAG (Retrieval-Augmented Generation)** pipeline over **FAISS** to answer **100+ context-aware queries** across multiple Indian regional cuisines, aiming for ~90% accuracy in nutrition guidance.
 
 **NEW**: Now with a modern **Next.js** frontend with TypeScript, React, and responsive design!
 
