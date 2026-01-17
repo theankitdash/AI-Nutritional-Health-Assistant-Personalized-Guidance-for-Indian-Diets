@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from './ChatMessage';
 import ChatForm from './ChatForm';
 import { sendChatMessage } from '@/lib/api';
-import { getPersonalDetails } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import styles from '@/styles/components/Chat.module.css';
 
 interface Message {
@@ -14,22 +14,9 @@ interface Message {
 
 export default function ChatContainer() {
     const [messages, setMessages] = useState<Message[]>([]);
-    const [welcomeName, setWelcomeName] = useState('User');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        // Fetch personal details to get user name
-        const fetchName = async () => {
-            try {
-                const details = await getPersonalDetails();
-                setWelcomeName(details.name || 'User');
-            } catch (error) {
-                console.error('Error fetching personal details:', error);
-            }
-        };
-        fetchName();
-    }, []);
+    const { userName } = useAuth();
 
     useEffect(() => {
         // Scroll to bottom when messages change
@@ -61,7 +48,7 @@ export default function ChatContainer() {
     return (
         <div className={styles.chatContainer}>
             <div className={styles.chatHeader}>
-                <h2>Welcome, {welcomeName}</h2>
+                <h2>Welcome, {userName}</h2>
             </div>
 
 

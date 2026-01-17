@@ -3,7 +3,7 @@ from app.models import (PersonalDetails, Preferences, HealthConditions)
 from app.routers.auth import get_session_email
 from app.db_connect import connect_db
 from app.services.health_metrics_service import calculate_and_store_health_metrics
-from app.services.faiss_utils import update_faiss_for_user
+from app.services.cache import clear_user_cache
 import traceback
 import asyncpg
 
@@ -46,10 +46,8 @@ async def add_personal_details(details: PersonalDetails, session_id: str = Cooki
         if conn:
             await conn.close()
 
-    try:
-        await update_faiss_for_user(email)
-    except Exception as e:
-        traceback.print_exc()
+    # Invalidate cache so next chat message fetches fresh data
+    clear_user_cache(session_id)
 
     return {"message": "Personal details added successfully."}
     
@@ -109,10 +107,8 @@ async def add_preferences(preferences: Preferences, session_id: str = Cookie(Non
         if conn:
             await conn.close()
 
-    try:
-        await update_faiss_for_user(email)
-    except Exception as e:
-        traceback.print_exc()
+    # Invalidate cache so next chat message fetches fresh data
+    clear_user_cache(session_id)
 
     return {"message": "Food preferences saved successfully."}
     
@@ -125,6 +121,13 @@ async def add_health_conditions(health_conditions: HealthConditions, session_id:
     conn = None
     try:
         conn = await connect_db()
+
+        # Remove PCOS field entirely for non-female users
+        if 'pcos' in data:
+            personal = await conn.fetchrow("SELECT gender FROM personal_details WHERE email=$1", email)
+            if personal and personal['gender'].lower() != 'female':
+                # Remove PCOS from data for non-female users
+                data.pop('pcos')
 
         # Manually build query to account for optional fields
         columns = ', '.join(['email'] + list(data.keys()))
@@ -157,10 +160,8 @@ async def add_health_conditions(health_conditions: HealthConditions, session_id:
         if conn:
             await conn.close()
 
-    try:
-        await update_faiss_for_user(email)
-    except Exception as e:
-        traceback.print_exc()
+    # Invalidate cache so next chat message fetches fresh data
+    clear_user_cache(session_id)
 
     return {"message": "Health conditions saved successfully."}
     

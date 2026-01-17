@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UseModalFormOptions<T> {
     fetchData: () => Promise<T>;
@@ -33,13 +33,7 @@ export function useModalForm<T>({
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isOpen) {
-            loadData();
-        }
-    }, [isOpen]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
@@ -56,7 +50,13 @@ export function useModalForm<T>({
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [fetchData, initialData]);
+
+    useEffect(() => {
+        if (isOpen) {
+            loadData();
+        }
+    }, [isOpen, loadData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,7 +64,15 @@ export function useModalForm<T>({
         setError(null);
 
         try {
-            await saveData(formData);
+            const response = await saveData(formData);
+
+            // Show success message from backend
+            if (response?.message) {
+                alert(response.message);
+            } else {
+                alert('Data saved successfully!');
+            }
+
             onSuccess?.();
             onClose();
         } catch (err: any) {

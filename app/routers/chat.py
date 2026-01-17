@@ -4,21 +4,24 @@ import traceback
 from app.models import ChatRequest
 from app.routers.auth import get_session_email
 from app.services.chat_graph_service import execute_chat
+from app.services.cache import conversation_summaries, user_profile_cache, clear_user_cache
 
 router = APIRouter()
-
-# A dict to hold chat histories per session (in-memory, reset on app restart)
-conversation_summaries = {}
 
 @router.post("/chat/")
 async def chat(chat: ChatRequest, session_id: str = Cookie(None)):
     try:
-        await get_session_email(session_id)
+        email = await get_session_email(session_id)
 
         if session_id not in conversation_summaries:
             conversation_summaries[session_id] = ""
+        
+        # Check if user profile is cached for this session
+        if session_id not in user_profile_cache:
+            # Cache miss - will be fetched by retrieve_user_node
+            user_profile_cache[session_id] = None
 
-        result = execute_chat(chat.message, conversation_summaries[session_id])
+        result = await execute_chat(chat.message, email, session_id, conversation_summaries[session_id])
         
         # Update summary for next conversation turn
         conversation_summaries[session_id] = result["summary"]

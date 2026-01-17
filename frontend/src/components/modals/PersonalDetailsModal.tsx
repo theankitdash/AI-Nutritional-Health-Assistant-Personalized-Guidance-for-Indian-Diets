@@ -5,6 +5,7 @@ import Modal from '@/components/ui/Modal';
 import { getPersonalDetails, savePersonalDetails } from '@/lib/api';
 import type { PersonalDetails } from '@/lib/types';
 import { useModalForm } from '@/hooks/useModalForm';
+import { useAuth } from '@/contexts/AuthContext';
 import styles from '@/styles/components/Modal.module.css';
 
 interface PersonalDetailsModalProps {
@@ -25,6 +26,7 @@ export default function PersonalDetailsModal({
     isOpen,
     onClose,
 }: PersonalDetailsModalProps) {
+    const { checkAuth } = useAuth();
     const { formData, setFormData, isLoading, isSaving, error, handleSubmit } =
         useModalForm({
             fetchData: getPersonalDetails,
@@ -32,6 +34,10 @@ export default function PersonalDetailsModal({
             initialData,
             isOpen,
             onClose,
+            onSuccess: () => {
+                // Refresh user name in AuthContext after saving
+                checkAuth();
+            },
         });
 
     const handleChange = (

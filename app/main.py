@@ -17,13 +17,13 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# Load FAISS indexes once at startup for better performance
+# Load FAISS index once at startup for better performance
 @app.on_event("startup")
 async def startup_event():
-    """Load FAISS indexes at startup to avoid loading on every request"""
-    print("Loading FAISS indexes...")
+    """Load food FAISS index at startup to avoid loading on every request"""
+    print("Loading food FAISS index...")
     initialize_faiss_indexes()
-    print("FAISS indexes loaded successfully!")
+    print("Food FAISS index loaded successfully!")
 
 app.include_router(auth.router)
 app.include_router(user_profile.router)
