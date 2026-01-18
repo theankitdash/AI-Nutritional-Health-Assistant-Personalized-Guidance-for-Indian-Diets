@@ -5,10 +5,12 @@ WORKDIR /app
 # Upgrade system packages to patch vulnerabilities
 RUN apt-get update && apt-get upgrade -y && apt-get clean
 
-COPY requirements.txt .
+# Copy requirements from parent directory
+COPY ../requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ./app ./app
+# Copy application code
+COPY . ./app
 
 # Expose the FastAPI port
 EXPOSE 8000

@@ -1,6 +1,21 @@
 services:
+  # Frontend - Next.js
+  frontend:
+    build: ./frontend
+    image: theankitdash/nutrify-health-frontend:latest
+    container_name: nutrify-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://fastapi:8000
+    depends_on:
+      - fastapi
+    networks:
+      - nutrify-network
+
+  # Backend - FastAPI
   fastapi:
-    build: .
+    build: ./app
     image: theankitdash/nutrify-health:latest
     container_name: nutrify-health
     ports:
@@ -9,8 +24,10 @@ services:
       - postgres-db
     env_file:
       - .env
+    networks:
+      - nutrify-network
 
-
+  # Database - PostgreSQL
   postgres-db:
     image: postgres:17
     container_name: postgres-db
@@ -20,6 +37,13 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data    
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - nutrify-network
+
 volumes:
   pgdata:
+
+networks:
+  nutrify-network:
+    driver: bridge
