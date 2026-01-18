@@ -113,7 +113,7 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 ### Prerequisites
 
 - **Python 3.9+** (3.10 or 3.11 recommended)
-- **Node.js 18+** and npm
+- **Node.js 22+** and npm
 - **PostgreSQL 17** 
 - **Git**
 
