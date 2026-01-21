@@ -1,8 +1,3 @@
-"""
-Session cache for storing user profiles and conversation summaries.
-This module is separate to avoid circular imports between chat router and chat service.
-"""
-
 # Cache to store user profiles per session (in-memory)
 user_profile_cache = {}
 

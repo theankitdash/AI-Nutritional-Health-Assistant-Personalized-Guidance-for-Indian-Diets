@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Cookie
 import traceback 
-
 from app.models import ChatRequest
 from app.routers.auth import get_session_email
 from app.services.chat_graph_service import execute_chat
