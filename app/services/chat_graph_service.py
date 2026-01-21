@@ -1,22 +1,9 @@
 from typing import TypedDict
 from langgraph.graph import StateGraph, END
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from dotenv import load_dotenv
-import os
 from app.services.faiss_service import get_food_faiss
 from app.db_connect import connect_db
 from app.services.cache import user_profile_cache
-
-load_dotenv()
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
-
-LLM = ChatNVIDIA(
-  model="google/gemma-7b",
-  api_key=NVIDIA_API_KEY, 
-  temperature=0.5,
-  top_p=1,
-  max_tokens=4096,
-)
+from app.services.nvidia_api_service import call_nvidia_api
 
 # LangGraph State
 class ChatState(TypedDict):
@@ -88,7 +75,7 @@ async def retrieve_user_node(state: ChatState):
             user_context_parts.append("DIETARY PREFERENCES: Not provided")
         
         user_context_parts.append("")  # Blank line
-        
+         
         # Health Conditions
         if health:
             user_context_parts.append("HEALTH CONDITIONS:")
@@ -162,8 +149,9 @@ def summary_node(state: ChatState):
         - Keep it under 120 words
         """
 
-    result = LLM.invoke(summary_prompt)
-    state["summary"] = result.content.strip()
+    messages = [{"role": "user", "content": summary_prompt}]
+    result = call_nvidia_api(messages)
+    state["summary"] = result.strip()
     return state
 
 def llm_node(state: ChatState):
@@ -186,9 +174,9 @@ def llm_node(state: ChatState):
             Reply in a friendly, knowledgeable, and contextual way based on the above info. Be concise unless they ask for details.
             """
     
-
-    result = LLM.invoke(prompt)
-    state["response"] = result.content.strip()
+    messages = [{"role": "user", "content": prompt}]
+    result = call_nvidia_api(messages)
+    state["response"] = result.strip()
     return state
 
 # Build Graph

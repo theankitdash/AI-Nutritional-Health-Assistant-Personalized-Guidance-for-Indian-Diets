@@ -36,7 +36,6 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 - **FAISS** — Vector similarity search for RAG pipeline
 - **Sentence Transformers** — Text embeddings (HuggingFace)
 - **PostgreSQL** — User data and profile storage
-- **SQLAlchemy** — ORM for database operations
 - **Pydantic** — Data validation and settings management
 
 #### Frontend
