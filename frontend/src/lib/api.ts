@@ -16,7 +16,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 async function fetchData<T>(
     url: string,
     method: string = 'GET',
-    body: any = null,
+    body: unknown = null,
     cacheKey?: string
 ): Promise<T> {
     // Check cache for GET requests
@@ -42,18 +42,34 @@ async function fetchData<T>(
     const response = await fetch(`${API_URL}${url}`, options);
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || response.statusText);
+        let errorMessage = response.statusText;
+        try {
+            const error = await response.json();
+            errorMessage = error.detail || error.message || errorMessage;
+        } catch {
+            // If parsing JSON fails, fallback to statusText
+        }
+        throw new Error(errorMessage);
     }
 
-    const data = await response.json();
-
-    // Cache the response for GET requests
-    if (method === 'GET' && cacheKey) {
-        apiCache.set(cacheKey, data);
+    // Handle 204 No Content
+    if (response.status === 204) {
+        return {} as T;
     }
 
-    return data;
+    try {
+        const data = await response.json();
+
+        // Cache the response for GET requests
+        if (method === 'GET' && cacheKey) {
+            apiCache.set(cacheKey, data);
+        }
+
+        return data;
+    } catch {
+        // Handle cases where response is not JSON
+        throw new Error('Invalid response format');
+    }
 }
 
 // Authentication APIs

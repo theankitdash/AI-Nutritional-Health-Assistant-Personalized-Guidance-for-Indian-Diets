@@ -76,3 +76,8 @@ export interface ChatResponse {
 export interface AuthStatus {
     isAuthenticated: boolean;
 }
+
+export interface ApiError {
+    detail: string;
+    message?: string;
+}

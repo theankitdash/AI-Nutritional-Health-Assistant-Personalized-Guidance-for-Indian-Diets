@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import type { ApiError } from '@/lib/types';
+import { useToast } from '@/contexts/ToastContext';
 
 interface UseModalFormOptions<T> {
     fetchData: () => Promise<T>;
-    saveData: (data: T) => Promise<any>;
+    saveData: (data: T) => Promise<unknown>;
     initialData: T;
     isOpen: boolean;
     onClose: () => void;
@@ -32,20 +34,23 @@ export function useModalForm<T>({
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { showToast } = useToast();
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
             const data = await fetchData();
-            if (data && Object.keys(data).length > 0) {
+            if (data && Object.keys(data as object).length > 0) {
                 setFormData(data);
             } else {
                 setFormData(initialData);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error fetching data:', err);
-            setError(err.message || 'Failed to load data');
+            const message = (err as ApiError).message || (err as Error).message || 'Failed to load data';
+            setError(message);
+            // Optional: showToast(message, 'error'); // Maybe too noisy on load
             setFormData(initialData);
         } finally {
             setIsLoading(false);
@@ -64,20 +69,23 @@ export function useModalForm<T>({
         setError(null);
 
         try {
-            const response = await saveData(formData);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const response = await saveData(formData) as any;
 
             // Show success message from backend
             if (response?.message) {
-                alert(response.message);
+                showToast(response.message, 'success');
             } else {
-                alert('Data saved successfully!');
+                showToast('Data saved successfully!', 'success');
             }
 
             onSuccess?.();
             onClose();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error saving data:', err);
-            setError(err.message || 'Failed to save data');
+            const message = (err as ApiError).message || (err as Error).message || 'Failed to save data';
+            setError(message);
+            showToast(message, 'error');
         } finally {
             setIsSaving(false);
         }

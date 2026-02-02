@@ -2,10 +2,10 @@ import faiss, json
 from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
 from langchain_community.docstore.in_memory import InMemoryDocstore
-from langchain_huggingface import HuggingFaceEmbeddings
+from sentence_transformers import SentenceTransformer
 
 # Build FAISS vectorstore manually — no pickle, no deserialization flag needed
-embedding = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+embedding = SentenceTransformer("all-MiniLM-L6-v2")
 
 def load_faiss_index():
     

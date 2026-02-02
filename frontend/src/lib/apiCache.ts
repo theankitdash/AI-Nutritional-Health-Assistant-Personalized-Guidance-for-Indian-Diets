@@ -6,13 +6,15 @@ interface CacheEntry<T> {
 }
 
 class ApiCache {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private cache: Map<string, CacheEntry<any>> = new Map();
 
     /**
      * Get data from cache if it exists and is not expired
      */
     get<T>(key: string): T | null {
-        const entry = this.cache.get(key);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entry = this.cache.get(key) as CacheEntry<T> | undefined;
 
         if (!entry) {
             return null;
@@ -26,7 +28,7 @@ class ApiCache {
             return null;
         }
 
-        return entry.data as T;
+        return entry.data;
     }
 
     /**

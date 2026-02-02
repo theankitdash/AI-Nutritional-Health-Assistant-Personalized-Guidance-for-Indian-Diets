@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import { updatePassword } from '@/lib/api';
 import { isStrongPassword } from '@/lib/utils';
+import { useToast } from '@/contexts/ToastContext';
 import styles from '@/styles/components/Modal.module.css';
 
 interface AccountSettingsModalProps {
@@ -18,6 +19,7 @@ export default function AccountSettingsModal({
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [passwordFeedback, setPasswordFeedback] = useState('');
+    const { showToast } = useToast();
 
     const handleNewPasswordChange = (value: string) => {
         setNewPassword(value);
@@ -32,12 +34,12 @@ export default function AccountSettingsModal({
         e.preventDefault();
 
         if (!isStrongPassword(newPassword)) {
-            alert('Password does not meet the required strength.');
+            showToast('Password does not meet the required strength.', 'error');
             return;
         }
 
         if (currentPassword === newPassword) {
-            alert('New password must be different from current password.');
+            showToast('New password must be different from current password.', 'error');
             return;
         }
 
@@ -46,13 +48,13 @@ export default function AccountSettingsModal({
                 current_password: currentPassword,
                 new_password: newPassword,
             });
-            alert('Password changed successfully!');
+            showToast('Password changed successfully!', 'success');
             setCurrentPassword('');
             setNewPassword('');
             setPasswordFeedback('');
             onClose();
         } catch (error: any) {
-            alert(`Error: ${error.message}`);
+            showToast(`Error: ${error.message}`, 'error');
         }
     };
 

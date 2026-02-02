@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { isValidEmail, isStrongPassword } from '@/lib/utils';
+import { useToast } from '@/contexts/ToastContext';
 import styles from '@/styles/components/Modal.module.css';
 
 interface AuthModalProps {
@@ -22,6 +23,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     const [confirmPasswordFeedback, setConfirmPasswordFeedback] = useState('');
 
     const { login, register } = useAuth();
+    const { showToast } = useToast();
 
     const handleUsernameChange = (value: string) => {
         setUsername(value);
@@ -63,31 +65,32 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
 
         if (isRegistering) {
             if (password !== confirmPassword) {
-                alert('Passwords do not match. Please try again.');
+                showToast('Passwords do not match. Please try again.', 'error');
                 return;
             }
             if (!isStrongPassword(password)) {
-                alert(
-                    'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.'
+                showToast(
+                    'Password needs 8+ chars, uppercase, lowercase, number, and special char.',
+                    'error'
                 );
                 return;
             }
 
             try {
                 await register({ email: username, password });
-                alert('User registration successful! Please add personal details.');
+                showToast('User registration successful! Please add personal details.', 'success');
                 onAuthSuccess(true); // true = is a registration
             } catch (error: any) {
                 console.error('Error during registration:', error);
-                alert(`Registration failed: ${error.message}`);
+                showToast(`Registration failed: ${error.message}`, 'error');
             }
         } else {
             try {
                 await login({ email: username, password });
-                alert('Login Successful!');
+                showToast('Login Successful!', 'success');
                 onAuthSuccess(false); // false = not a registration
             } catch (error: any) {
-                alert(`Error: ${error.message}`);
+                showToast(`Error: ${error.message}`, 'error');
             }
         }
     };

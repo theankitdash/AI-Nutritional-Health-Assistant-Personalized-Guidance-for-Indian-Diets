@@ -5,9 +5,12 @@ import ChatMessage from './ChatMessage';
 import ChatForm from './ChatForm';
 import { sendChatMessage } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
+import { ApiError } from '@/lib/types';
 import styles from '@/styles/components/Chat.module.css';
 
 interface Message {
+    id?: string;
     sender: 'user' | 'bot';
     text: string;
 }
@@ -17,6 +20,7 @@ export default function ChatContainer() {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { userName } = useAuth();
+    const { showToast } = useToast();
 
     useEffect(() => {
         // Scroll to bottom when messages change
@@ -25,7 +29,8 @@ export default function ChatContainer() {
 
     const handleSendMessage = async (message: string) => {
         // Add user message to chat
-        setMessages((prev) => [...prev, { sender: 'user', text: message }]);
+        const userMsgId = Date.now().toString();
+        setMessages((prev) => [...prev, { id: userMsgId, sender: 'user', text: message }]);
         setIsLoading(true);
 
         try {
@@ -33,12 +38,17 @@ export default function ChatContainer() {
             const response = await sendChatMessage(message);
             setMessages((prev) => [
                 ...prev,
-                { sender: 'bot', text: response.bot_response },
+                { id: (Date.now() + 1).toString(), sender: 'bot', text: response.bot_response },
             ]);
-        } catch (error: any) {
+        } catch (error: unknown) {
+            console.error('Chat error:', error);
+            // Show toast for error but also add error message to chat
+            const errorMessage = (error as ApiError).message || (error as Error).message || 'Unable to connect to the server';
+            showToast(errorMessage, 'error');
+
             setMessages((prev) => [
                 ...prev,
-                { sender: 'bot', text: `Sorry, I encountered an error: ${error.message || 'Unable to connect to the server'}` },
+                { id: (Date.now() + 1).toString(), sender: 'bot', text: `Sorry, I encountered an error: ${errorMessage}` },
             ]);
         } finally {
             setIsLoading(false);
@@ -54,7 +64,7 @@ export default function ChatContainer() {
 
             <div className={styles.chatMessages}>
                 {messages.map((msg, index) => (
-                    <ChatMessage key={index} sender={msg.sender} text={msg.text} />
+                    <ChatMessage key={msg.id || index} sender={msg.sender} text={msg.text} />
                 ))}
                 {isLoading && (
                     <div style={{ textAlign: 'center', padding: '1rem', color: '#666' }}>
