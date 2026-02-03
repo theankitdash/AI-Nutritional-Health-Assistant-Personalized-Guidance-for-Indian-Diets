@@ -2,7 +2,7 @@ from typing import TypedDict, Optional, List
 from langgraph.graph import StateGraph, END
 from app.services.faiss_service import get_food_faiss
 from app.services.nvidia_api_service import call_nvidia_api
-from app.services.health_metrics_graph import compute_health_metrics
+from app.services.graphs.health_metrics_graph import compute_health_metrics
 from app.db_connect import connect_db
 
 
