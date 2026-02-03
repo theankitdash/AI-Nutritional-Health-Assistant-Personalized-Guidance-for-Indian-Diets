@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, Cookie
 from app.models import (PersonalDetails, Preferences, HealthConditions)
 from app.routers.auth import get_session_email
 from app.db_connect import connect_db
-from app.services.health_metrics_service import calculate_and_store_health_metrics
 from app.services.cache import clear_user_cache
 import traceback
 import asyncpg
@@ -30,11 +29,6 @@ async def add_personal_details(details: PersonalDetails, session_id: str = Cooki
                 weight = EXCLUDED.weight,
                 waist = EXCLUDED.waist;
         """, email, *details.model_dump().values())
-    
-        try:
-            await calculate_and_store_health_metrics(email)
-        except Exception as e:
-            traceback.print_exc()
     
     except asyncpg.PostgresError as e:
         traceback.print_exc()
@@ -91,11 +85,6 @@ async def add_preferences(preferences: Preferences, session_id: str = Cookie(Non
                 sleepquality = EXCLUDED.sleepquality, supplementusage = EXCLUDED.supplementusage,
                 supplementfrequency = EXCLUDED.supplementfrequency;
         """, email, *preferences.model_dump().values())
-
-        try:
-            await calculate_and_store_health_metrics(email)
-        except Exception as e:
-            traceback.print_exc()
     
     except asyncpg.PostgresError as e:
         traceback.print_exc()
@@ -143,12 +132,6 @@ async def add_health_conditions(health_conditions: HealthConditions, session_id:
             DO UPDATE SET {updates};
         """
         await conn.execute(query, *values)
-    
-        try:
-            await calculate_and_store_health_metrics(email)
-        except Exception as e:
-            traceback.print_exc()
-            # Log but don't fail the main request
 
     except asyncpg.PostgresError as e:
         traceback.print_exc()
