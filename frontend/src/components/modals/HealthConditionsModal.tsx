@@ -1,12 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '@/components/ui/Modal';
 import { getHealthConditions, saveHealthConditions, getPersonalDetails } from '@/lib/api';
 import type { HealthConditions } from '@/lib/types';
 import { useModalForm } from '@/hooks/useModalForm';
+import {
+    DIABETES_OPTIONS,
+    THYROID_OPTIONS,
+    YES_NO_OPTIONS
+} from '@/lib/formConstants';
+import { SelectField, InputField } from '@/components/ui/FormComponents';
 import styles from '@/styles/components/Modal.module.css';
-import { useState, useEffect } from 'react';
 
 interface HealthConditionsModalProps {
     isOpen: boolean;
@@ -62,11 +67,8 @@ export default function HealthConditionsModal({
         }
     };
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
-        const { id, value } = e.target;
-        setFormData((prev) => ({ ...prev, [id]: value }));
+    const handleChange = (name: string, value: string | number) => {
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     return (
@@ -84,219 +86,155 @@ export default function HealthConditionsModal({
                     </div>
                 ) : (
                     <>
-                        <div className={styles.setting}>
-                            <label htmlFor="allergies">Allergies:</label>
-                            <input
-                                type="text"
-                                id="allergies"
-                                value={formData.allergies || ''}
-                                onChange={handleChange}
-                                placeholder="Enter any allergies (e.g., peanuts, shellfish)"
-                                disabled={isSaving}
-                            />
-                        </div>
+                        <InputField
+                            label="Allergies"
+                            id="allergies"
+                            value={formData.allergies || ''}
+                            onChange={handleChange}
+                            placeholder="Enter any allergies (e.g., peanuts, shellfish)"
+                            disabled={isSaving}
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="diabetes">Diabetes:</label>
-                            <select
-                                id="diabetes"
-                                value={formData.diabetes || 'none'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="none">None</option>
-                                <option value="type1">Type 1</option>
-                                <option value="type2">Type 2</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Diabetes"
+                            id="diabetes"
+                            value={formData.diabetes || 'none'}
+                            options={DIABETES_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="hypertension">Hypertension (High Blood Pressure):</label>
-                            <select
-                                id="hypertension"
-                                value={formData.hypertension || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Hypertension (High Blood Pressure)"
+                            id="hypertension"
+                            value={formData.hypertension || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="cholesterol">High Cholesterol:</label>
-                            <select
-                                id="cholesterol"
-                                value={formData.cholesterol || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="High Cholesterol"
+                            id="cholesterol"
+                            value={formData.cholesterol || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="thyroid">Thyroid Disorders:</label>
-                            <select
-                                id="thyroid"
-                                value={formData.thyroid || 'none'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="none">None</option>
-                                <option value="hypothyroidism">Hypothyroidism</option>
-                                <option value="hyperthyroidism">Hyperthyroidism</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Thyroid Disorders"
+                            id="thyroid"
+                            value={formData.thyroid || 'none'}
+                            options={THYROID_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="kidneydisease">Kidney Disease:</label>
-                            <select
-                                id="kidneydisease"
-                                value={formData.kidneydisease || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Kidney Disease"
+                            id="kidneydisease"
+                            value={formData.kidneydisease || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="liverdisease">Liver Disease:</label>
-                            <select
-                                id="liverdisease"
-                                value={formData.liverdisease || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Liver Disease"
+                            id="liverdisease"
+                            value={formData.liverdisease || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="lactoseintolerance">Lactose Intolerance:</label>
-                            <select
-                                id="lactoseintolerance"
-                                value={formData.lactoseintolerance || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Lactose Intolerance"
+                            id="lactoseintolerance"
+                            value={formData.lactoseintolerance || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="glutensensitivity">Gluten Sensitivity (Celiac Disease):</label>
-                            <select
-                                id="glutensensitivity"
-                                value={formData.glutensensitivity || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Gluten Sensitivity (Celiac Disease)"
+                            id="glutensensitivity"
+                            value={formData.glutensensitivity || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
 
                         {/* PCOS Field - Only visible for female users */}
                         {showPCOS && (
-                            <div className={styles.setting}>
-                                <label htmlFor="pcos">PCOS/PCOD:</label>
-                                <select
-                                    id="pcos"
-                                    value={formData.pcos || 'no'}
-                                    onChange={handleChange}
-                                    disabled={isSaving}
-                                >
-                                    <option value="no">No</option>
-                                    <option value="yes">Yes</option>
-                                </select>
-                            </div>
-                        )}
-
-                        <div className={styles.setting}>
-                            <label htmlFor="anemia">Anemia (Iron Deficiency):</label>
-                            <select
-                                id="anemia"
-                                value={formData.anemia || 'no'}
+                            <SelectField
+                                label="PCOS/PCOD"
+                                id="pcos"
+                                value={formData.pcos || 'no'}
+                                options={YES_NO_OPTIONS}
                                 onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
-
-                        <div className={styles.setting}>
-                            <label htmlFor="osteoporosis">Osteoporosis (Bone Weakness):</label>
-                            <select
-                                id="osteoporosis"
-                                value={formData.osteoporosis || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
-
-                        <div className={styles.setting}>
-                            <label htmlFor="ibs">IBS (Irritable Bowel Syndrome):</label>
-                            <select
-                                id="ibs"
-                                value={formData.ibs || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
-
-                        <div className={styles.setting}>
-                            <label htmlFor="gerd">GERD (Acid Reflux/Heartburn):</label>
-                            <select
-                                id="gerd"
-                                value={formData.gerd || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
-
-                        <div className={styles.setting}>
-                            <label htmlFor="gout">Gout:</label>
-                            <select
-                                id="gout"
-                                value={formData.gout || 'no'}
-                                onChange={handleChange}
-                                disabled={isSaving}
-                            >
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
-
-                        <div className={styles.setting}>
-                            <label htmlFor="otherconditions">Other Conditions:</label>
-                            <input
-                                type="text"
-                                id="otherconditions"
-                                value={formData.otherconditions || ''}
-                                onChange={handleChange}
-                                placeholder="Enter any other conditions"
                                 disabled={isSaving}
                             />
-                        </div>
+                        )}
+
+                        <SelectField
+                            label="Anemia (Iron Deficiency)"
+                            id="anemia"
+                            value={formData.anemia || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
+
+                        <SelectField
+                            label="Osteoporosis (Bone Weakness)"
+                            id="osteoporosis"
+                            value={formData.osteoporosis || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
+
+                        <SelectField
+                            label="IBS (Irritable Bowel Syndrome)"
+                            id="ibs"
+                            value={formData.ibs || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
+
+                        <SelectField
+                            label="GERD (Acid Reflux/Heartburn)"
+                            id="gerd"
+                            value={formData.gerd || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
+
+                        <SelectField
+                            label="Gout"
+                            id="gout"
+                            value={formData.gout || 'no'}
+                            options={YES_NO_OPTIONS}
+                            onChange={handleChange}
+                            disabled={isSaving}
+                        />
+
+                        <InputField
+                            label="Other Conditions"
+                            id="otherconditions"
+                            value={formData.otherconditions || ''}
+                            onChange={handleChange}
+                            placeholder="Enter any other conditions"
+                            disabled={isSaving}
+                        />
 
                         <button
-                            className={styles.button}
+                            className={styles.button} // Keep original styling
                             type="submit"
                             disabled={isSaving}
                         >

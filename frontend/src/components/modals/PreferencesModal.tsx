@@ -6,6 +6,30 @@ import { getPreferences, savePreferences } from '@/lib/api';
 import type { Preferences } from '@/lib/types';
 import { useModalForm } from '@/hooks/useModalForm';
 import styles from '@/styles/components/Modal.module.css';
+import {
+    FOOD_PREFERENCES,
+    SNACK_PREFERENCES,
+    MEAL_TIMINGS,
+    CHEAT_DAY_FREQUENCY,
+    CULTURAL_PREFERENCES,
+    PREFERRED_INGREDIENTS,
+    CUISINE_PREFERENCES,
+    SPICY_TOLERANCE,
+    MEAL_TYPES,
+    FAVORITE_MEALS,
+    MEAL_FREQUENCY,
+    SWEET_PREFERENCE,
+    EATING_OUT_FREQUENCY,
+    PREFERRED_DRINKS,
+    ACTIVITY_LEVELS,
+    FITNESS_GOALS,
+    FOOD_RESTRICTIONS,
+    CAFFEINE_INTAKE,
+    SLEEP_QUALITY,
+    SUPPLEMENT_USAGE,
+    SUPPLEMENT_FREQUENCY
+} from '@/lib/formConstants';
+import { RadioGroup, CheckboxGroup, SelectField, InputField } from '@/components/ui/FormComponents';
 
 interface PreferencesModalProps {
     isOpen: boolean;
@@ -79,11 +103,6 @@ export default function PreferencesModal({
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const isChecked = (fieldName: string, value: string): boolean => {
-        const fieldValue = formData[fieldName as keyof Preferences] as string || '';
-        return fieldValue.split(', ').includes(value);
-    };
-
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Preferences">
             <form onSubmit={handleSubmit}>
@@ -99,559 +118,191 @@ export default function PreferencesModal({
                     </div>
                 ) : (
                     <>
-                        {/* Food Preference */}
-                        <div className={styles.setting}>
-                            <label>Food Preference:</label>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="foodpreference"
-                                    value="Veg"
-                                    checked={formData.foodpreference === 'Veg'}
-                                    onChange={(e) => handleRadioChange('foodpreference', e.target.value)}
-                                />
-                                <label>Vegetarian</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="foodpreference"
-                                    value="Non-Veg"
-                                    checked={formData.foodpreference === 'Non-Veg'}
-                                    onChange={(e) => handleRadioChange('foodpreference', e.target.value)}
-                                />
-                                <label>Non-Vegetarian</label>
-                            </div>
-                        </div>
+                        <RadioGroup
+                            label="Food Preference"
+                            name="foodpreference"
+                            options={FOOD_PREFERENCES}
+                            selectedValue={formData.foodpreference}
+                            onChange={handleRadioChange}
+                        />
 
-                        {/* Snack Preferences */}
-                        <div className={styles.setting}>
-                            <label>Snack Preferences:</label>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('snackpreferences', 'Healthy')}
-                                    onChange={(e) => handleCheckboxChange('snackpreferences', 'Healthy', e.target.checked)}
-                                />
-                                <label>Healthy Snacks</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('snackpreferences', 'High-Protein')}
-                                    onChange={(e) => handleCheckboxChange('snackpreferences', 'High-Protein', e.target.checked)}
-                                />
-                                <label>High-Protein Snacks</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('snackpreferences', 'Low-Calorie')}
-                                    onChange={(e) => handleCheckboxChange('snackpreferences', 'Low-Calorie', e.target.checked)}
-                                />
-                                <label>Low-Calorie Snacks</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('snackpreferences', 'No-Snacks')}
-                                    onChange={(e) => handleCheckboxChange('snackpreferences', 'No-Snacks', e.target.checked)}
-                                />
-                                <label>No Snacks</label>
-                            </div>
-                        </div>
+                        <CheckboxGroup
+                            label="Snack Preferences"
+                            name="snackpreferences"
+                            options={SNACK_PREFERENCES}
+                            selectedValues={formData.snackpreferences}
+                            onChange={handleCheckboxChange}
+                        />
 
-                        {/* Meal Timings */}
-                        <div className={styles.setting}>
-                            <label>Meal Timings:</label>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('mealtimings', 'Breakfast')}
-                                    onChange={(e) => handleCheckboxChange('mealtimings', 'Breakfast', e.target.checked)}
-                                />
-                                <label>Breakfast</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('mealtimings', 'Lunch')}
-                                    onChange={(e) => handleCheckboxChange('mealtimings', 'Lunch', e.target.checked)}
-                                />
-                                <label>Lunch</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('mealtimings', 'Dinner')}
-                                    onChange={(e) => handleCheckboxChange('mealtimings', 'Dinner', e.target.checked)}
-                                />
-                                <label>Dinner</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('mealtimings', 'Frequent-Small-Meals')}
-                                    onChange={(e) => handleCheckboxChange('mealtimings', 'Frequent-Small-Meals', e.target.checked)}
-                                />
-                                <label>Frequent Small Meals</label>
-                            </div>
-                        </div>
+                        <CheckboxGroup
+                            label="Meal Timings"
+                            name="mealtimings"
+                            options={MEAL_TIMINGS}
+                            selectedValues={formData.mealtimings}
+                            onChange={handleCheckboxChange}
+                        />
 
-                        {/* Cheat Day Frequency */}
-                        <div className={styles.setting}>
-                            <label>Cheat Day Frequency:</label>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="cheatdayfrequency"
-                                    value="None"
-                                    checked={formData.cheatdayfrequency === 'None'}
-                                    onChange={(e) => handleRadioChange('cheatdayfrequency', e.target.value)}
-                                />
-                                <label>No Cheat Days</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="cheatdayfrequency"
-                                    value="Weekly"
-                                    checked={formData.cheatdayfrequency === 'Weekly'}
-                                    onChange={(e) => handleRadioChange('cheatdayfrequency', e.target.value)}
-                                />
-                                <label>Weekly</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="cheatdayfrequency"
-                                    value="Biweekly"
-                                    checked={formData.cheatdayfrequency === 'Biweekly'}
-                                    onChange={(e) => handleRadioChange('cheatdayfrequency', e.target.value)}
-                                />
-                                <label>Biweekly (Every 2 Weeks)</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="cheatdayfrequency"
-                                    value="Monthly"
-                                    checked={formData.cheatdayfrequency === 'Monthly'}
-                                    onChange={(e) => handleRadioChange('cheatdayfrequency', e.target.value)}
-                                />
-                                <label>Monthly</label>
-                            </div>
-                        </div>
+                        <RadioGroup
+                            label="Cheat Day Frequency"
+                            name="cheatdayfrequency"
+                            options={CHEAT_DAY_FREQUENCY}
+                            selectedValue={formData.cheatdayfrequency}
+                            onChange={handleRadioChange}
+                        />
 
-                        {/* Cultural/Regional Preferences */}
-                        <div className={styles.setting}>
-                            <label>Cultural/Regional Food Preferences:</label>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('culturalpreferences', 'North Indian')}
-                                    onChange={(e) => handleCheckboxChange('culturalpreferences', 'North Indian', e.target.checked)}
-                                />
-                                <label>North Indian</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('culturalpreferences', 'South Indian')}
-                                    onChange={(e) => handleCheckboxChange('culturalpreferences', 'South Indian', e.target.checked)}
-                                />
-                                <label>South Indian</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('culturalpreferences', 'East Indian')}
-                                    onChange={(e) => handleCheckboxChange('culturalpreferences', 'East Indian', e.target.checked)}
-                                />
-                                <label>East Indian</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('culturalpreferences', 'West Indian')}
-                                    onChange={(e) => handleCheckboxChange('culturalpreferences', 'West Indian', e.target.checked)}
-                                />
-                                <label>West Indian</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('culturalpreferences', 'Global')}
-                                    onChange={(e) => handleCheckboxChange('culturalpreferences', 'Global', e.target.checked)}
-                                />
-                                <label>Global Cuisine</label>
-                            </div>
-                        </div>
+                        <CheckboxGroup
+                            label="Cultural/Regional Food Preferences"
+                            name="culturalpreferences"
+                            options={CULTURAL_PREFERENCES}
+                            selectedValues={formData.culturalpreferences}
+                            onChange={handleCheckboxChange}
+                        />
 
-                        {/* Preferred Ingredients/Superfoods */}
-                        <div className={styles.setting}>
-                            <label>Preferred Ingredients / Superfoods:</label>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('preferredingredients', 'Quinoa')}
-                                    onChange={(e) => handleCheckboxChange('preferredingredients', 'Quinoa', e.target.checked)}
-                                />
-                                <label>Quinoa</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('preferredingredients', 'Flax Seeds')}
-                                    onChange={(e) => handleCheckboxChange('preferredingredients', 'Flax Seeds', e.target.checked)}
-                                />
-                                <label>Flax Seeds</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('preferredingredients', 'Chia Seeds')}
-                                    onChange={(e) => handleCheckboxChange('preferredingredients', 'Chia Seeds', e.target.checked)}
-                                />
-                                <label>Chia Seeds</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('preferredingredients', 'Almonds')}
-                                    onChange={(e) => handleCheckboxChange('preferredingredients', 'Almonds', e.target.checked)}
-                                />
-                                <label>Almonds</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('preferredingredients', 'Moringa')}
-                                    onChange={(e) => handleCheckboxChange('preferredingredients', 'Moringa', e.target.checked)}
-                                />
-                                <label>Moringa</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="checkbox"
-                                    checked={isChecked('preferredingredients', 'Ghee')}
-                                    onChange={(e) => handleCheckboxChange('preferredingredients', 'Ghee', e.target.checked)}
-                                />
-                                <label>Ghee</label>
-                            </div>
-                        </div>
+                        <CheckboxGroup
+                            label="Preferred Ingredients / Superfoods"
+                            name="preferredingredients"
+                            options={PREFERRED_INGREDIENTS}
+                            selectedValues={formData.preferredingredients}
+                            onChange={handleCheckboxChange}
+                        />
 
-                        {/* Cuisine Preferences */}
-                        <div className={styles.setting}>
-                            <label>Cuisine Preferences:</label>
-                            {['Indian', 'Continental', 'Mediterranean', 'Chinese', 'Italian', 'Mexican', 'Thai', 'Japanese', 'Middle Eastern'].map((cuisine) => (
-                                <div key={cuisine}>
-                                    <input
-                                        type="checkbox"
-                                        checked={isChecked('cuisinepreferences', cuisine)}
-                                        onChange={(e) => handleCheckboxChange('cuisinepreferences', cuisine, e.target.checked)}
-                                    />
-                                    <label>{cuisine}</label>
-                                </div>
-                            ))}
-                        </div>
+                        <CheckboxGroup
+                            label="Cuisine Preferences"
+                            name="cuisinepreferences"
+                            options={CUISINE_PREFERENCES}
+                            selectedValues={formData.cuisinepreferences}
+                            onChange={handleCheckboxChange}
+                        />
 
-                        {/* Spicy Food Tolerance */}
-                        <div className={styles.setting}>
-                            <label htmlFor="spicytolerance">Spicy Food Tolerance:</label>
-                            <select
-                                id="spicytolerance"
-                                value={formData.spicyfoodtolerance}
-                                onChange={(e) => handleInputChange('spicyfoodtolerance', e.target.value)}
-                            >
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Spicy Food Tolerance"
+                            id="spicyfoodtolerance"
+                            value={formData.spicyfoodtolerance}
+                            options={SPICY_TOLERANCE}
+                            onChange={handleInputChange}
+                        />
 
-                        {/* Preferred Meal Type */}
-                        <div className={styles.setting}>
-                            <label htmlFor="mealtype">Preferred Meal Type:</label>
-                            <select
-                                id="mealtype"
-                                value={formData.preferredmealtype}
-                                onChange={(e) => handleInputChange('preferredmealtype', e.target.value)}
-                            >
-                                <option value="Light">Light</option>
-                                <option value="Heavy">Heavy</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Preferred Meal Type"
+                            id="preferredmealtype"
+                            value={formData.preferredmealtype}
+                            options={MEAL_TYPES}
+                            onChange={handleInputChange}
+                        />
 
-                        {/* Favorite Meal */}
-                        <div className={styles.setting}>
-                            <label htmlFor="favoritemeal">Favorite Meal:</label>
-                            <select
-                                id="favoritemeal"
-                                value={formData.favoritemeal}
-                                onChange={(e) => handleInputChange('favoritemeal', e.target.value)}
-                            >
-                                <option value="Breakfast">Breakfast</option>
-                                <option value="Lunch">Lunch</option>
-                                <option value="Dinner">Dinner</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Favorite Meal"
+                            id="favoritemeal"
+                            value={formData.favoritemeal}
+                            options={FAVORITE_MEALS}
+                            onChange={handleInputChange}
+                        />
 
-                        {/* Meal Frequency */}
-                        <div className={styles.setting}>
-                            <label>Meal Frequency:</label>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="mealfrequency"
-                                    value="2"
-                                    checked={formData.mealfrequency === '2'}
-                                    onChange={(e) => handleRadioChange('mealfrequency', e.target.value)}
-                                />
-                                <label>2 meals/day</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="mealfrequency"
-                                    value="3"
-                                    checked={formData.mealfrequency === '3'}
-                                    onChange={(e) => handleRadioChange('mealfrequency', e.target.value)}
-                                />
-                                <label>3 meals/day</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="mealfrequency"
-                                    value="5-6"
-                                    checked={formData.mealfrequency === '5-6'}
-                                    onChange={(e) => handleRadioChange('mealfrequency', e.target.value)}
-                                />
-                                <label>5-6 small meals</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="mealfrequency"
-                                    value="Intermittent Fasting"
-                                    checked={formData.mealfrequency === 'Intermittent Fasting'}
-                                    onChange={(e) => handleRadioChange('mealfrequency', e.target.value)}
-                                />
-                                <label>Intermittent Fasting</label>
-                            </div>
-                        </div>
+                        <RadioGroup
+                            label="Meal Frequency"
+                            name="mealfrequency"
+                            options={MEAL_FREQUENCY}
+                            selectedValue={formData.mealfrequency}
+                            onChange={handleRadioChange}
+                        />
 
-                        {/* Sweet Preference */}
-                        <div className={styles.setting}>
-                            <label>Sweet Preference:</label>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="sweetpreference"
-                                    value="No Sugar"
-                                    checked={formData.sweetpreference === 'No Sugar'}
-                                    onChange={(e) => handleRadioChange('sweetpreference', e.target.value)}
-                                />
-                                <label>No Sugar</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="sweetpreference"
-                                    value="Low Sugar"
-                                    checked={formData.sweetpreference === 'Low Sugar'}
-                                    onChange={(e) => handleRadioChange('sweetpreference', e.target.value)}
-                                />
-                                <label>Low Sugar</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="sweetpreference"
-                                    value="Regular Sugar"
-                                    checked={formData.sweetpreference === 'Regular Sugar'}
-                                    onChange={(e) => handleRadioChange('sweetpreference', e.target.value)}
-                                />
-                                <label>Regular Sugar</label>
-                            </div>
-                        </div>
+                        <RadioGroup
+                            label="Sweet Preference"
+                            name="sweetpreference"
+                            options={SWEET_PREFERENCE}
+                            selectedValue={formData.sweetpreference}
+                            onChange={handleRadioChange}
+                        />
 
-                        {/* Eating Out Frequency */}
-                        <div className={styles.setting}>
-                            <label>Eating Out Frequency:</label>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="eatingout"
-                                    value="Never"
-                                    checked={formData.eatingoutfrequency === 'Never'}
-                                    onChange={(e) => handleRadioChange('eatingoutfrequency', e.target.value)}
-                                />
-                                <label>Never</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="eatingout"
-                                    value="Rarely"
-                                    checked={formData.eatingoutfrequency === 'Rarely'}
-                                    onChange={(e) => handleRadioChange('eatingoutfrequency', e.target.value)}
-                                />
-                                <label>Rarely</label>
-                            </div>
-                            <div>
-                                <input
-                                    type="radio"
-                                    name="eatingout"
-                                    value="Often"
-                                    checked={formData.eatingoutfrequency === 'Often'}
-                                    onChange={(e) => handleRadioChange('eatingoutfrequency', e.target.value)}
-                                />
-                                <label>Often</label>
-                            </div>
-                        </div>
+                        <RadioGroup
+                            label="Eating Out Frequency"
+                            name="eatingoutfrequency"
+                            options={EATING_OUT_FREQUENCY}
+                            selectedValue={formData.eatingoutfrequency}
+                            onChange={handleRadioChange}
+                        />
 
-                        {/* Hydration Level */}
-                        <div className={styles.setting}>
-                            <label htmlFor="hydration">Daily Water Intake (L):</label>
-                            <input
-                                type="number"
-                                id="hydration"
-                                min="0"
-                                value={formData.hydrationlevel || ''}
-                                onChange={(e) => handleInputChange('hydrationlevel', parseFloat(e.target.value) || 0)}
-                            />
-                        </div>
+                        <InputField
+                            label="Daily Water Intake (L)"
+                            id="hydrationlevel"
+                            type="number"
+                            value={formData.hydrationlevel}
+                            onChange={handleInputChange}
+                            min="0"
+                        />
 
-                        {/* Preferred Drinks */}
-                        <div className={styles.setting}>
-                            <label>Preferred Drinks:</label>
-                            {['Water', 'Tea', 'Coffee'].map((drink) => (
-                                <div key={drink}>
-                                    <input
-                                        type="checkbox"
-                                        checked={isChecked('preferreddrinks', drink)}
-                                        onChange={(e) => handleCheckboxChange('preferreddrinks', drink, e.target.checked)}
-                                    />
-                                    <label>{drink}</label>
-                                </div>
-                            ))}
-                        </div>
+                        <CheckboxGroup
+                            label="Preferred Drinks"
+                            name="preferreddrinks"
+                            options={PREFERRED_DRINKS}
+                            selectedValues={formData.preferreddrinks}
+                            onChange={handleCheckboxChange}
+                        />
 
-                        {/* Activity Level */}
-                        <div className={styles.setting}>
-                            <label htmlFor="activitylevel">Activity Level:</label>
-                            <select
-                                id="activitylevel"
-                                value={formData.activitylevel}
-                                onChange={(e) => handleInputChange('activitylevel', e.target.value)}
-                            >
-                                <option value="Sedentary">Sedentary</option>
-                                <option value="Lightly Active">Lightly Active</option>
-                                <option value="Moderately Active">Moderately Active</option>
-                                <option value="Very Active">Very Active</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Activity Level"
+                            id="activitylevel"
+                            value={formData.activitylevel}
+                            options={ACTIVITY_LEVELS}
+                            onChange={handleInputChange}
+                        />
 
-                        {/* Fitness Goal */}
-                        <div className={styles.setting}>
-                            <label htmlFor="fitnessgoal">Fitness Goal:</label>
-                            <select
-                                id="fitnessgoal"
-                                value={formData.fitnessgoal}
-                                onChange={(e) => handleInputChange('fitnessgoal', e.target.value)}
-                            >
-                                <option value="Weight Loss">Weight Loss</option>
-                                <option value="Muscle Gain">Muscle Gain</option>
-                                <option value="Maintenance">Maintenance</option>
-                                <option value="General Well-being">General Well-being</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Fitness Goal"
+                            id="fitnessgoal"
+                            value={formData.fitnessgoal}
+                            options={FITNESS_GOALS}
+                            onChange={handleInputChange}
+                        />
 
-                        {/* Food Restrictions */}
-                        <div className={styles.setting}>
-                            <label>Food Restrictions:</label>
-                            {['Nuts', 'Gluten', 'Dairy', 'Eggs', 'Shellfish', 'Peanuts', 'Low-Carb', 'Low-Sodium', 'Halal', 'Kosher'].map((restriction) => (
-                                <div key={restriction}>
-                                    <input
-                                        type="checkbox"
-                                        checked={isChecked('foodrestrictions', restriction)}
-                                        onChange={(e) => handleCheckboxChange('foodrestrictions', restriction, e.target.checked)}
-                                    />
-                                    <label>{restriction === 'Dairy' ? 'No Dairy (Vegan-Friendly)' : `${restriction === 'Gluten' ? 'Gluten-Free' : restriction === 'Nuts' || restriction === 'Eggs' || restriction === 'Shellfish' || restriction === 'Peanuts' ? `No ${restriction}` : restriction}`}</label>
-                                </div>
-                            ))}
-                        </div>
+                        <CheckboxGroup
+                            label="Food Restrictions"
+                            name="foodrestrictions"
+                            options={FOOD_RESTRICTIONS}
+                            selectedValues={formData.foodrestrictions}
+                            onChange={handleCheckboxChange}
+                        />
 
-                        {/* Caffeine Intake */}
-                        <div className={styles.setting}>
-                            <label htmlFor="caffeine">Caffeine Intake:</label>
-                            <select
-                                id="caffeine"
-                                value={formData.caffeineintake}
-                                onChange={(e) => handleInputChange('caffeineintake', e.target.value)}
-                            >
-                                <option value="None">None</option>
-                                <option value="Low">Low</option>
-                                <option value="Moderate">Moderate</option>
-                                <option value="High">High</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Caffeine Intake"
+                            id="caffeineintake"
+                            value={formData.caffeineintake}
+                            options={CAFFEINE_INTAKE}
+                            onChange={handleInputChange}
+                        />
 
-                        {/* Sleep */}
-                        <div className={styles.setting}>
-                            <label htmlFor="sleep">Average Sleep (Hours):</label>
-                            <input
-                                type="number"
-                                id="sleep"
-                                min="0"
-                                value={formData.averagesleep || ''}
-                                onChange={(e) => handleInputChange('averagesleep', parseFloat(e.target.value) || 0)}
-                            />
-                        </div>
+                        <InputField
+                            label="Average Sleep (Hours)"
+                            id="averagesleep"
+                            type="number"
+                            value={formData.averagesleep}
+                            onChange={handleInputChange}
+                            min="0"
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="sleepquality">Sleep Quality:</label>
-                            <select
-                                id="sleepquality"
-                                value={formData.sleepquality}
-                                onChange={(e) => handleInputChange('sleepquality', e.target.value)}
-                            >
-                                <option value="Poor">Poor</option>
-                                <option value="Average">Average</option>
-                                <option value="Good">Good</option>
-                            </select>
-                        </div>
+                        <SelectField
+                            label="Sleep Quality"
+                            id="sleepquality"
+                            value={formData.sleepquality}
+                            options={SLEEP_QUALITY}
+                            onChange={handleInputChange}
+                        />
 
-                        {/* Supplement Usage */}
-                        <div className={styles.setting}>
-                            <label>Supplement Usage:</label>
-                            {['Multivitamin', 'Protein', 'Other'].map((supplement) => (
-                                <div key={supplement}>
-                                    <input
-                                        type="checkbox"
-                                        checked={isChecked('supplementusage', supplement)}
-                                        onChange={(e) => handleCheckboxChange('supplementusage', supplement, e.target.checked)}
-                                    />
-                                    <label>{supplement}</label>
-                                </div>
-                            ))}
-                        </div>
+                        <CheckboxGroup
+                            label="Supplement Usage"
+                            name="supplementusage"
+                            options={SUPPLEMENT_USAGE}
+                            selectedValues={formData.supplementusage}
+                            onChange={handleCheckboxChange}
+                        />
 
-                        <div className={styles.setting}>
-                            <label htmlFor="supplementfreq">Supplement Frequency:</label>
-                            <select
-                                id="supplementfreq"
-                                value={formData.supplementfrequency}
-                                onChange={(e) => handleInputChange('supplementfrequency', e.target.value)}
-                            >
-                                <option value="Daily">Daily</option>
-                                <option value="Weekly">Weekly</option>
-                                <option value="Occasionally">Occasionally</option>
-                            </select>
-                        </div>
-
+                        <SelectField
+                            label="Supplement Frequency"
+                            id="supplementfrequency"
+                            value={formData.supplementfrequency}
+                            options={SUPPLEMENT_FREQUENCY}
+                            onChange={handleInputChange}
+                        />
 
                         <button
                             className={styles.button}
