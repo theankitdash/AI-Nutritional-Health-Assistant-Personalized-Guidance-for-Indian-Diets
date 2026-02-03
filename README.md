@@ -39,7 +39,7 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 - **Pydantic** — Data validation and settings management
 
 #### Frontend
-- **Next.js 14** — React framework with App Router
+- **Next.js 16** — React framework with App Router
 - **TypeScript** — Type-safe JavaScript
 - **React 18** — Modern UI library
 
@@ -115,8 +115,6 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 - **Node.js 22+** and npm
 - **PostgreSQL 17** 
 - **Git**
-
-### Quick Start with Docker 🐳 (Recommended)
 
 The fastest way to get started:
 
