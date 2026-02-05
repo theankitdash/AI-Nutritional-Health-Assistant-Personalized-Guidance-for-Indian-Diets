@@ -140,7 +140,8 @@ npm run dev
 
 #### 1. Backend Setup
 
-# Start FastAPI server
+```bash
+Start FastAPI server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
