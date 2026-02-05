@@ -1,12 +1,13 @@
 # 🥗 AI Nutritional Health Assistant — Personalized Guidance for Indian Diets
 
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.125.0-009688.svg)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-14.2-black.svg)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.128.0-009688.svg)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black.svg)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791.svg)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-A conversational AI nutrition assistant specializing in Indian diets. Built with **FastAPI**, **LangGraph**, and a **RAG (Retrieval-Augmented Generation)** pipeline powered by **FAISS** vector search. Delivers context-aware nutrition guidance across multiple Indian regional cuisines with a modern **Next.js + TypeScript** frontend.
+A conversational AI nutrition assistant specializing in Indian diets. Built with **FastAPI**, **LangGraph**, and a **RAG (Retrieval-Augmented Generation)** pipeline powered by **FAISS** vector search. Delivers context-aware nutrition guidance across multiple Indian regional cuisines with a modern **Next.js 16 + TypeScript** frontend and **PostgreSQL** database backend.
 
 ---
 
@@ -36,17 +37,19 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 - **FAISS** — Vector similarity search for RAG pipeline
 - **Sentence Transformers** — Text embeddings (HuggingFace)
 - **PostgreSQL** — User data and profile storage
+- **asyncpg** — Async PostgreSQL adapter
 - **Pydantic** — Data validation and settings management
 
 #### Frontend
 - **Next.js 16** — React framework with App Router
-- **TypeScript** — Type-safe JavaScript
 - **React 18** — Modern UI library
+- **TypeScript 5.0+** — Type-safe JavaScript
 
 #### Infrastructure
-- **Docker & Docker Compose** — Containerization
-- **Uvicorn** — ASGI server
-- **NVIDIA AI Endpoints** — LLM inference (optional)
+- **Docker & Docker Compose** — Containerization with multi-container orchestration
+- **PostgreSQL 17** — Containerized database service
+- **Uvicorn** — ASGI server for FastAPI
+- **NVIDIA API Endpoints** — LLM inference (optional)
 
 ### System Design
 
@@ -113,44 +116,61 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 
 - **Python 3.9+** (3.10 or 3.11 recommended)
 - **Node.js 22+** and npm
-- **PostgreSQL 17** 
+- **PostgreSQL 17** (or Docker for containerized deployment)
 - **Git**
+- **.env file** with database and API credentials (see Configuration section)
 
-The fastest way to get started:
+For **Docker deployment**: Only need **Docker** and **Docker Compose**
+
+### Quick Start with Docker
 
 ```bash
 # Clone the repository
 git clone https://github.com/theankitdash/AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets.git
 cd AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets
 
-# Backend will be at: http://localhost:8000
-# Database will be at: localhost:5432
+# Create .env file with database credentials
+cp .env.example .env  # (or create manually with required variables)
+
+# Start all services with Docker Compose
+docker-compose up --build
 ```
 
-Then **manually start the frontend** (not in Docker yet):
-
-```bash
-cd frontend
-npm install
-npm run dev
-# Frontend will be at: http://localhost:3000
-```
+Services will be available at:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Database**: localhost:5432
 
 ### Manual Setup (Without Docker)
+
+#### Prerequisites
+- Python 3.9+
+- PostgreSQL 17 (must be running before starting backend)
+- Node.js 22+
 
 #### 1. Backend Setup
 
 ```bash
-Start FastAPI server
+# Navigate to project root
+cd AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets
+
+# Install Python dependencies
+pip install -r app/requirements.txt
+
+# Create and configure .env file (see Configuration section below)
+
+# Start FastAPI server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ✅ Backend running at: **http://localhost:8000**  
+📚 API Documentation: **http://localhost:8000/docs**
 
-#### 2. Frontend Setup
+#### 2. Frontend Setup (in new terminal)
 
 ```bash
-# Open new terminal, navigate to frontend
+# Navigate to frontend directory
 cd frontend
 
 # Install Node.js dependencies
@@ -163,8 +183,21 @@ npm run dev
 ✅ Frontend running at: **http://localhost:3000**
 
 #### 3. Database Setup
-- Download and install from [postgresql.org](https://www.postgresql.org/download/)
-- Create database: `createdb nutrify_db`
+
+PostgreSQL must be running before starting the backend:
+
+```bash
+# On Windows (if PostgreSQL installed locally):
+# PostgreSQL service should auto-start or start from Services
+
+# On macOS/Linux:
+brew services start postgresql
+# or
+sudo systemctl start postgresql
+
+# Create database (optional, can be auto-created):
+createdb nutrify_db
+```
 
 ---
 
@@ -172,7 +205,33 @@ npm run dev
 
 ### Environment Variables
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root with the following variables:
+
+```env
+# Database Configuration
+DB_NAME=nutrify_db
+DB_USER=postgres
+DB_PASSWORD=your_secure_password
+DB_HOST=localhost          # Use 'postgres-db' for Docker
+DB_PORT=5432
+
+# API Configuration
+API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8000  # For Docker: http://fastapi:8000
+
+# LLM Configuration (Optional - for NVIDIA API integration)
+NVIDIA_API_KEY=your_nvidia_api_key
+```
+
+### Docker Environment
+
+When using Docker Compose, update the `.env` file to use Docker service names:
+
+```env
+# For Docker services, use service names instead of localhost
+DB_HOST=postgres-db
+NEXT_PUBLIC_API_URL=http://fastapi:8000
+```
 
 ## 🌐 Using the Application
 
@@ -182,32 +241,50 @@ Navigate to `http://localhost:3000` in your browser
 ### 2. **Register/Login**
 - Create a new account with email and password
 - Or login with existing credentials
+- Password is securely hashed with bcrypt
 
 ### 3. **Complete Your Profile**
 
-Set up three key sections:
+Set up three key sections after logging in:
 
-- **Personal Details**
-  - Age, gender, height, weight
-  - Activity level (sedentary, moderate, active)
+#### Personal Details
+- Age/Date of Birth, gender, height, weight
+- Waist circumference
+- Activity level (sedentary, moderate, active)
 
-- **Dietary Preferences**
-  - Diet type (vegan, vegetarian, non-veg)
-  - Regional cuisines
-  - Meal preferences
+#### Dietary Preferences  
+- Diet type (vegan, vegetarian, non-vegetarian)
+- Regional cuisines (North, South, East, West Indian)
+- Preferred meal types and ingredients
+- Snack and sweet preferences
+- Spice tolerance
+- Caffeine intake
+- Hydration level
+- Meal frequency and eating out frequency
 
-- **Health Conditions**
-  - Allergies (nuts, dairy, etc.)
-  - Medical conditions (diabetes, hypertension, etc.)
-  - Dietary restrictions
+#### Health Conditions
+- Food allergies and restrictions
+- Medical conditions (diabetes, hypertension, etc.)
+- Sleep quality and duration
+- Supplement usage
+- Fitness goals (weight loss, maintenance, muscle gain)
 
 ### 4. **Start Chatting!**
 
-Ask questions like:
+Ask the AI assistant questions like:
 - *"What should I eat for lunch in South India under 500 kcal?"*
 - *"Give me a high-protein vegetarian dinner option"*
 - *"I need a meal plan for weight loss with North Indian food"*
 - *"What's a healthy breakfast option with less than 300 calories?"*
+- *"Suggest meals for someone with dairy allergies"*
+- *"I'm diabetic, what are safe Indian meal options?"*
+
+The assistant will provide personalized recommendations based on:
+- Your dietary preferences
+- Health conditions and allergies
+- Fitness goals
+- Regional cuisine preferences
+- Nutritional requirements
 
 ---
 
@@ -215,22 +292,54 @@ Ask questions like:
 
 The application uses curated Indian food nutrition datasets:
 
-- **food_dataset.csv** — Primary nutrition database with Indian foods
-- **Food_dataset_Anuvaad.xlsx** — Regional cuisine data
-- **Sources**: USDA FoodData Central, Indian Food Composition Tables
+**Data Files**:
+- `food_dataset.csv` — Primary nutrition database with Indian foods
+- `food_dataset.json` — JSON format of food data
+- `Food_dataset_Anuvaad.xlsx` — Extended regional cuisine data with translations
+
+**Data Attributes**:
+- Food name and aliases
+- Calories and macronutrients (protein, carbohydrates, fat)
+- Micronutrients (vitamins, minerals)
+- Regional origin and cuisine type
+- Common preparation methods
+
+**Data Sources**: 
+- USDA FoodData Central
+- Indian Food Composition Tables (IFCT)
+- Regional Indian nutrition studies
+
+**FAISS Indexing**:
+- Food data is embedded using Sentence Transformers
+- FAISS index stored in `app/food_dataset/`
+- Enables fast semantic search for food recommendations
 
 ---
 
 ## ⚠️ Important Notes & Limitations
 
 > [!WARNING]
-> **Medical Disclaimer**: This application is for informational purposes only and is NOT intended as medical or clinical nutrition advice. Always consult healthcare professionals for medical nutrition therapy.
+> **Medical Disclaimer**: This application is for informational and educational purposes only and is NOT intended as medical or clinical nutrition advice. Always consult licensed healthcare professionals (doctors, registered dietitians) for:
+> - Medical nutrition therapy
+> - Chronic disease management
+> - Severe allergies or food sensitivities
+> - Personalized medical treatment plans
 
-- **Accuracy**: Nutrition data accuracy depends on dataset quality; edge cases may vary
-- **Regional Coverage**: Currently focused on major Indian regions; some cuisines may have limited data
-- **Allergies**: Always double-check ingredients if you have severe allergies
-- **Portion Sizes**: Estimates are approximate; actual portions may vary
-- **GPU**: Embeddings are faster with GPU, but CPU works fine for moderate use
+**Known Limitations**:
+- **Data Accuracy**: Nutrition data accuracy depends on dataset quality; preparation methods and ingredient sourcing affect values
+- **Regional Coverage**: Currently focused on major Indian regions (North, South, East, West); some cuisines may have limited data
+- **Allergies**: Always independently verify ingredients if you have severe allergies or food sensitivities
+- **Portion Sizes**: Recommendations are approximate; actual portions depend on individual needs and cooking methods
+- **Individual Variation**: Nutritional needs vary based on metabolism, health conditions, and medications
+- **LLM Limitations**: AI recommendations may occasionally be inaccurate; always verify with nutritional references
+- **GPU Acceleration**: Embeddings are faster with GPU support, but CPU execution is supported for moderate usage
+
+**Best Practices**:
+- Use this tool as a starting point for nutrition planning
+- Cross-reference recommendations with official nutrition databases
+- Keep your profile information updated for better recommendations
+- Consult healthcare professionals for medical conditions
+- Report any inaccurate nutritional data to help improve the system
 
 ---
 
