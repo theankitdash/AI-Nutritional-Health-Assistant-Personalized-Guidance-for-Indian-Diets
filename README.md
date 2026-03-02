@@ -32,48 +32,165 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 
 #### Backend
 - **FastAPI** — High-performance async Python web framework
-- **LangGraph** — Advanced workflow orchestration for AI agents
-- **LangChain** — LLM application framework
+- **LangGraph** — Advanced workflow orchestration for AI agent pipelines
+- **LangChain** — LLM application framework (Document, VectorStore, Embeddings)
 - **FAISS** — Vector similarity search for RAG pipeline
-- **Sentence Transformers** — Text embeddings (HuggingFace)
-- **PostgreSQL** — User data and profile storage
-- **asyncpg** — Async PostgreSQL adapter
-- **Pydantic** — Data validation and settings management
+- **Sentence Transformers** — Text embeddings (`all-MiniLM-L6-v2`, HuggingFace)
+- **PostgreSQL 17** — Relational storage for users, profiles, sessions
+- **asyncpg** — Async PostgreSQL adapter (direct SQL, no ORM)
+- **Pydantic** — Request/response data validation
+- **bcrypt** — Password hashing for authentication
+- **NVIDIA NIM API** — LLM inference endpoint (`google/gemma-3-27b-it`)
 
 #### Frontend
 - **Next.js 16** — React framework with App Router
 - **React 18** — Modern UI library
 - **TypeScript 5.0+** — Type-safe JavaScript
+- **CSS Modules** — Scoped component-level styles
 
 #### Infrastructure
-- **Docker & Docker Compose** — Containerization with multi-container orchestration
-- **PostgreSQL 17** — Containerized database service
+- **Docker & Docker Compose** — Multi-container orchestration (3 services)
+- **PostgreSQL 17** — Containerized database with persistent volume
 - **Uvicorn** — ASGI server for FastAPI
-- **NVIDIA API Endpoints** — LLM inference (optional)
+- **NVIDIA API Endpoints** — Cloud LLM inference
 
 ### System Design
 
 ```
-┌─────────────┐          ┌──────────────┐          ┌─────────────┐
-│   Next.js   │  HTTP    │   FastAPI    │  Vector  │    FAISS    │
-│  Frontend   │─────────▶│   Backend    │  Search  │   Index     │
-│             │          │              │─────────▶│             │
-└─────────────┘          └──────────────┘          └─────────────┘
-                                │
-                                │ SQL
-                                ▼
-                         ┌──────────────┐
-                         │  PostgreSQL  │
-                         │   Database   │
-                         └──────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              PRESENTATION LAYER                                │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │                     Next.js 16 Frontend (TypeScript)                     │  │
+│  │                                                                         │  │
+│  │  ┌────────────┐  ┌───────────────┐  ┌──────────────┐  ┌─────────────┐   │  │
+│  │  │ AuthModal  │  │ PersonalDet.  │  │ Preferences  │  │ HealthCond. │   │  │
+│  │  │            │  │    Modal      │  │    Modal     │  │    Modal    │   │  │
+│  │  └────────────┘  └───────────────┘  └──────────────┘  └─────────────┘   │  │
+│  │  ┌──────────────────────────────────────┐  ┌────────────────────────┐    │  │
+│  │  │  ChatContainer + ChatForm + Message  │  │  Header + Sidebar     │    │  │
+│  │  └──────────────────────────────────────┘  └────────────────────────┘    │  │
+│  │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐   │  │
+│  │  │  AuthContext      │  │  ToastContext    │  │  useModalForm Hook  │   │  │
+│  │  └──────────────────┘  └──────────────────┘  └──────────────────────┘   │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────┬───────────────────────────────────────────────────────┘
+                          │ HTTP + Cookies (CORS)
+                          ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                API LAYER                                       │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │                  FastAPI Application (Uvicorn ASGI)                      │   │
+│  │                                                                         │   │
+│  │  ┌────────────────┐  ┌─────────────────┐  ┌──────────────────────────┐   │   │
+│  │  │  Auth Router   │  │  Chat Router    │  │  User Profile Router    │   │   │
+│  │  │  /register     │  │  /chat/         │  │  /personal-details      │   │   │
+│  │  │  /login        │  │                 │  │  /preferences           │   │   │
+│  │  │  /logout       │  │                 │  │  /health-conditions     │   │   │
+│  │  │  /check-login  │  │                 │  │  GET + POST endpoints   │   │   │
+│  │  │  /update-pass  │  │                 │  │                         │   │   │
+│  │  └────────────────┘  └────────┬────────┘  └──────────────────────────┘   │   │
+│  └───────────────────────────────┼──────────────────────────────────────────┘   │
+└──────────────────────────────────┼──────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         ORCHESTRATION LAYER (LangGraph)                        │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │                        Chat Graph (Main Pipeline)                       │   │
+│  │                                                                         │   │
+│  │  ┌─────────────────────────────────────────────────────────────────┐     │   │
+│  │  │              Parallel Retrieval Node (asyncio.gather)           │     │   │
+│  │  │  ┌──────────────┐ ┌───────────────────┐ ┌───────────────────┐  │     │   │
+│  │  │  │ Retrieve     │ │ Compute Health    │ │ Retrieve Food     │  │     │   │
+│  │  │  │ User Profile │ │ Metrics (sub-graph)│ │ (FAISS Search)    │  │     │   │
+│  │  │  └──────────────┘ └───────────────────┘ └───────────────────┘  │     │   │
+│  │  └────────────────────────────┬────────────────────────────────────┘     │   │
+│  │                               ▼                                         │   │
+│  │  ┌────────────────────────────────────────────────────────────────┐      │   │
+│  │  │         Intent Classification Node (LLM-powered)              │      │   │
+│  │  │    Classifies: meal_plan | nutrition_query | health_advice |   │      │   │
+│  │  │                 general                                       │      │   │
+│  │  └──────────┬───────────┬───────────────┬────────────────┬───────┘      │   │
+│  │             ▼           ▼               ▼                ▼              │   │
+│  │  ┌──────────────┐ ┌────────────┐ ┌──────────────┐ ┌─────────────┐      │   │
+│  │  │  Meal Plan   │ │ Nutrition  │ │   Health     │ │   General   │      │   │
+│  │  │  Handler ─────▶│  Query     │ │   Advice     │ │   Handler   │      │   │
+│  │  │(sub-graph)   │ │  Handler   │ │   Handler    │ │             │      │   │
+│  │  └──────┬───────┘ └─────┬──────┘ └──────┬───────┘ └──────┬──────┘      │   │
+│  │         └───────────────┴───────────────┴────────────────┘              │   │
+│  │                                    ▼                                    │   │
+│  │                    ┌──────────────────────────┐                          │   │
+│  │                    │  Summary Node (LLM)      │                          │   │
+│  │                    │  Updates conversation    │                          │   │
+│  │                    │  summary for memory      │                          │   │
+│  │                    └──────────────────────────┘                          │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │                     Meal Planning Graph (Sub-pipeline)                   │   │
+│  │  analyze_requirements → fetch_health_metrics → fetch_food_context →      │   │
+│  │  generate_meals (LLM) → validate_nutrition (LLM) → format_meal_plan     │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │                  Health Metrics Graph (Sub-pipeline)                     │   │
+│  │  fetch_user_data → compute_base_metrics (Age, BMI, BMR, BFP) →          │   │
+│  │  compute_derived_metrics (TDEE, LBM, Muscle Mass, WHtR, etc.) →         │   │
+│  │  compute_nutrition_metrics (Macros, Protein, Fiber, Electrolytes) →      │   │
+│  │  finalize_metrics (format for LLM context)                              │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+└────────────────────────────────┬──────────────────────┬──────────────────────────┘
+                                 │                      │
+                 ┌───────────────┘                      └──────────────┐
+                 ▼                                                     ▼
+┌────────────────────────────────┐         ┌───────────────────────────────────────┐
+│       DATA / RAG LAYER         │         │              LLM LAYER                │
+│                                │         │                                       │
+│  ┌──────────────────────────┐  │         │  ┌────────────────────────────────┐   │
+│  │    FAISS Vector Index    │  │         │  │     NVIDIA NIM API Service     │   │
+│  │  ┌────────────────────┐  │  │         │  │  ┌──────────────────────────┐  │   │
+│  │  │ index.faiss        │  │  │         │  │  │  Model: google/gemma-3-  │  │   │
+│  │  │ index.json         │  │  │         │  │  │         27b-it           │  │   │
+│  │  └────────────────────┘  │  │         │  │  │                          │  │   │
+│  │  Sentence Transformers   │  │         │  │  │                          │  │   │
+│  │  (all-MiniLM-L6-v2)      │  │         │  │  └──────────────────────────┘  │   │
+│  └──────────────────────────┘  │         │  └────────────────────────────────┘   │
+│                                │         │                                       │
+│  ┌──────────────────────────┐  │         │  Used for: Intent Classification,     │
+│  │    PostgreSQL 17         │  │         │  Meal Planning, Nutrition Queries,    │
+│  │  ┌────────────────────┐  │  │         │  Health Advice, Conversation Summary  │
+│  │  │  credentials       │  │  │         └───────────────────────────────────────┘
+│  │  │  personal_details  │  │  │
+│  │  │  preferences       │  │  │         ┌───────────────────────────────────────┐
+│  │  │  health_conditions │  │  │         │          CACHING LAYER                │ 
+│  │  │  sessions          │  │  │         │                                       │
+│  │  └────────────────────┘  │  │         │  ┌────────────────────────────────┐   │
+│  └──────────────────────────┘  │         │  │  In-Memory Python Dicts        │   │
+│                                │         │  │  • user_profile_cache(by sess) │   │
+│  ┌──────────────────────────┐  │         │  │  • conversation_summaries      │   │
+│  │  Food Datasets (Source)  │  │         │  └────────────────────────────────┘   │
+│  │  • food_dataset.csv      │  │         └───────────────────────────────────────┘
+│  │  • food_dataset.json     │  │
+│  │  • Anuvaad.xlsx          │  │
+│  └──────────────────────────┘  │
+└────────────────────────────────┘
 ```
 
-**RAG Pipeline Flow:**
-1. User query → Embedding generation
-2. FAISS vector search → Retrieve relevant food data
-3. Context + Query → LLM prompt augmentation
-4. LLM generates personalized nutrition advice
-5. Response returned to user
+**Chat Pipeline Flow (LangGraph):**
+1. User message arrives at `/chat/` endpoint → session validated via cookie
+2. **Parallel Retrieval** — User profile, health metrics, and FAISS food search run concurrently (`asyncio.gather`)
+3. **Intent Classification** — LLM classifies intent into `meal_plan`, `nutrition_query`, `health_advice`, or `general`
+4. **Conditional Routing** — Message routed to the appropriate specialized handler node
+5. **Handler Execution** — Handler generates response using user context + health metrics + food data + LLM
+6. **Summary Update** — Conversation summary updated for multi-turn memory
+7. Response returned to frontend
+
+**Health Metrics Pipeline (25+ Calculations):**
+- Base: Age, BMI, BMR (Mifflin-St Jeor), Body Fat %
+- Derived: TDEE, Lean Body Mass, Muscle Mass, Visceral Fat, WHtR, Metabolic Age
+- Nutrition: Macronutrient breakdown, Protein intake, Micronutrients, Electrolytes, Fiber
+- Assessment: BMD, Max Heart Rate, Hydration Level, Sleep Score, Skeletal Muscle Mass
 
 ---
 
@@ -81,31 +198,92 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 
 ```plaintext
 .
-├── app/                        # FastAPI Backend
-│   ├── routers/                # API route handlers
-│   ├── services/               # Business logic layer
-│   ├── models.py               # SQLAlchemy database models
-│   ├── database.py             # Database configuration
-│   └── main.py                 # FastAPI application entry point
+├── app/                              # FastAPI Backend
+│   ├── routers/                      # API route handlers
+│   │   ├── auth.py                   # Authentication (register, login, logout, sessions)
+│   │   ├── chat.py                   # Chat endpoint (POST /chat/)
+│   │   └── user_profile.py           # Profile CRUD (personal, preferences, health)
+│   ├── services/                     # Business logic & AI services
+│   │   ├── graphs/                   # LangGraph pipeline definitions
+│   │   │   ├── chat_graph.py         # Main chat orchestration graph
+│   │   │   ├── health_metrics_graph.py  # Health metrics computation graph
+│   │   │   └── meal_planning_graph.py   # Meal plan generation graph
+│   │   ├── nodes/                    # LangGraph node implementations
+│   │   │   ├── intent_nodes.py       # Intent classification & routing
+│   │   │   ├── retrieval_nodes.py    # User, health, food data retrieval
+│   │   │   └── handler_nodes.py      # Specialized response handlers
+│   │   ├── faiss_service.py          # FAISS index loading & search
+│   │   ├── nvidia_api_service.py     # NVIDIA NIM API integration
+│   │   └── cache.py                  # In-memory session caching
+│   ├── food_dataset/                 # Pre-built FAISS index
+│   │   ├── index.faiss               # FAISS vector index (1.5MB)
+│   │   ├── index.json                # Food text data for docstore
+│   │   └── food_dataset.csv          # Original CSV for FAISS build
+│   ├── main.py                       # FastAPI app entry point + CORS + startup
+│   ├── models.py                     # Pydantic request/response models
+│   ├── db_connect.py                 # PostgreSQL connection + table creation
+│   ├── health_metrics.py             # 25+ health metric calculators
+│   ├── requirements.txt              # Python dependencies
+│   ├── dockerfile                    # Backend Docker image
+│   └── .dockerignore                 # Docker build exclusions
 │
-├── frontend/                   # Next.js Frontend
+├── frontend/                         # Next.js 16 Frontend
 │   ├── src/
-│   │   ├── app/                # Next.js App Router pages
-│   │   ├── components/         # Reusable React components
-│   │   ├── lib/                # API client & utilities
-│   │   └── styles/             # Global styles
-│   └── package.json            # Node.js dependencies
+│   │   ├── app/                      # Next.js App Router
+│   │   │   ├── layout.tsx            # Root layout
+│   │   │   └── page.tsx              # Main page (chat interface)
+│   │   ├── components/               # React components
+│   │   │   ├── chat/                 # Chat UI components
+│   │   │   │   ├── ChatContainer.tsx # Chat window with message history
+│   │   │   │   ├── ChatForm.tsx      # Message input form
+│   │   │   │   └── ChatMessage.tsx   # Individual message bubble
+│   │   │   ├── layout/               # Layout components
+│   │   │   │   ├── Header.tsx        # App header with navigation
+│   │   │   │   └── Sidebar.tsx       # Side navigation panel
+│   │   │   ├── modals/               # Modal dialogs
+│   │   │   │   ├── AuthModal.tsx     # Login/Register modal
+│   │   │   │   ├── PersonalDetailsModal.tsx
+│   │   │   │   ├── PreferencesModal.tsx
+│   │   │   │   ├── HealthConditionsModal.tsx
+│   │   │   │   └── AccountSettingsModal.tsx
+│   │   │   └── ui/                   # Shared UI primitives
+│   │   │       ├── Modal.tsx         # Base modal component
+│   │   │       ├── FormComponents.tsx # Reusable form elements
+│   │   │       └── Toast.tsx         # Toast notifications
+│   │   ├── contexts/                 # React Contexts
+│   │   │   ├── AuthContext.tsx       # Authentication state management
+│   │   │   └── ToastContext.tsx      # Toast notification state
+│   │   ├── hooks/                    # Custom React hooks
+│   │   │   └── useModalForm.ts       # Form state management for modals
+│   │   └── styles/                   # CSS Modules
+│   │       ├── globals.css           # Global styles
+│   │       └── components/           # Component-scoped styles
+│   │           ├── Chat.module.css
+│   │           ├── Header.module.css
+│   │           ├── MainPage.module.css
+│   │           ├── Modal.module.css
+│   │           ├── Sidebar.module.css
+│   │           └── Toast.module.css
+│   ├── package.json                  # Node.js dependencies
+│   ├── tsconfig.json                 # TypeScript configuration
+│   ├── next.config.mjs               # Next.js configuration
+│   ├── dockerfile                    # Frontend Docker image
+│   └── .dockerignore                 # Docker build exclusions
 │
-├── faiss_RAG.py                # RAG pipeline implementation
-├── food_dataset.csv            # Curated Indian food nutrition data
-├── food_dataset.json           # JSON format food data
-├── Food_dataset_Anuvaad.xlsx   # Regional dataset
-├── requirements.txt            # Python dependencies
-├── dockerfile                  # Docker image definition
-├── docker-compose.yml          # Multi-container orchestration
-├── start-servers.bat           # Quick start script (Windows)
-├── .gitignore                  # Git ignore rules
-└── README.md                   # This file
+├── faiss_RAG.py                      # Standalone FAISS index builder script
+├── food_dataset.csv                  # Curated Indian food nutrition data
+├── food_dataset.json                 # JSON format food data (3.4MB)
+├── Food_dataset_Anuvaad.xlsx         # Regional dataset with translations
+├── food_dataset.py                   # Dataset conversion utility
+├── usda-food.py                      # USDA food data fetcher
+├── test_nvidia_api.py                # NVIDIA API connection test
+├── docker-compose.yml                # Multi-container orchestration (3 services)
+├── start-servers.bat                 # Quick start script (Windows)
+├── API_CONNECTION_SETUP.md           # API setup guide
+├── DOCKER_GUIDE.md                   # Docker deployment guide
+├── .env                              # Environment variables
+├── .gitignore                        # Git ignore rules
+└── README.md                         # This file
 ```
 
 ---
