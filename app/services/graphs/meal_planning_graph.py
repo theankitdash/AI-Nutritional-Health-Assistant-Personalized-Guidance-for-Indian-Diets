@@ -1,6 +1,5 @@
 from typing import TypedDict, Optional, List
 from langgraph.graph import StateGraph, END
-from app.services.faiss_service import get_food_faiss
 from app.services.nvidia_api_service import call_nvidia_api
 from app.services.graphs.health_metrics_graph import compute_health_metrics
 from app.db_connect import connect_db
@@ -34,7 +33,6 @@ class MealPlanState(TypedDict):
 
 
 # ============ NODES ============
-
 async def analyze_requirements_node(state: MealPlanState) -> MealPlanState:
     """Parse user request and extract meal planning requirements."""
     request = state["user_request"].lower()
@@ -130,16 +128,16 @@ async def fetch_health_metrics_node(state: MealPlanState) -> MealPlanState:
 
 
 def fetch_food_context_node(state: MealPlanState) -> MealPlanState:
-    """Retrieve relevant Indian food options from database."""
+    """Retrieve relevant Indian food options using hybrid search."""
     if state.get("error"):
         return state
     
     try:
-        food_faiss = get_food_faiss()
+        from app.services.hybrid_retriever import hybrid_search
         
-        # Search for foods based on preferences
+        # Search for foods based on preferences using hybrid retrieval
         query = f"Indian {state.get('user_request', 'meal')} healthy"
-        docs = food_faiss.similarity_search(query, k=10)
+        docs = hybrid_search(query, k_final=10)
         state["food_context"] = "\n".join(d.page_content for d in docs)
         
     except Exception as e:

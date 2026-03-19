@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, user_profile, chat
 from app.services.faiss_service import initialize_faiss_indexes
+from app.services.bm25_service import initialize_bm25
+from app.services.hybrid_retriever import initialize_reranker
 
 app = FastAPI()
 
@@ -17,13 +19,20 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# Load FAISS index once at startup for better performance
+# Load all indexes and models once at startup
 @app.on_event("startup")
 async def startup_event():
-    """Load food FAISS index at startup to avoid loading on every request"""
-    print("Loading food FAISS index...")
+    """Load FAISS index, BM25 index, and Cross-Encoder reranker at startup."""
+    print("Loading FAISS food index...")
     initialize_faiss_indexes()
-    print("Food FAISS index loaded successfully!")
+    
+    print("Loading BM25 index...")
+    initialize_bm25()
+    
+    print("Loading Cross-Encoder reranker...")
+    initialize_reranker()
+    
+    print("All indexes and models loaded successfully!")
 
 app.include_router(auth.router)
 app.include_router(user_profile.router)

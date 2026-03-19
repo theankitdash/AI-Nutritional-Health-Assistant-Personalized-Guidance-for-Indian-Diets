@@ -1,6 +1,7 @@
 from app.db_connect import connect_db
 from app.services.cache import user_profile_cache
-from app.services.faiss_service import get_food_faiss
+from app.services.nvidia_api_service import call_nvidia_api
+from app.services.tools import search_food_database
 
 
 async def retrieve_user_node(state: dict):
@@ -103,19 +104,43 @@ async def compute_health_metrics_node(state: dict):
         return {"health_metrics_context": f"Could not compute health metrics: {str(e)}"}
 
 
-def retrieve_food_node(state: dict):
-    """Retrieve relevant food information from FAISS index."""
+def tool_decision_node(state: dict):
+    """
+    Agentic tool-calling node: asks the LLM whether the user's message
+    needs food database information. If yes, runs hybrid search.
+    If no, skips retrieval entirely.
+    """
+    user_message = state.get("user_message", "")
+    if not user_message:
+        return {"retrieved_context": ""}
+
+    # Ask the LLM whether food retrieval is needed
+    decision_prompt = f"""You are a decision classifier. Given the user message below, 
+decide if it requires looking up food/nutrition data from a database.
+
+User message: "{user_message}"
+
+Reply with ONLY "YES" or "NO". Nothing else.
+- YES: if the message asks about specific foods, nutrients, calories, dietary info, or needs food recommendations
+- NO: if it's a greeting, general question, or doesn't need food data"""
+
     try:
-        food_faiss = get_food_faiss()
-        if food_faiss is None:
-            return {"retrieved_context": "Food database not available"}
-        
-        user_message = state.get("user_message", "")
-        if not user_message:
+        messages = [{"role": "user", "content": decision_prompt}]
+        decision = call_nvidia_api(messages).strip().upper()
+
+        if "YES" in decision:
+            print(f"[TOOL] Food retrieval triggered for: '{user_message[:60]}...'")
+            retrieved = search_food_database(user_message, k=5)
+            return {"retrieved_context": retrieved}
+        else:
+            print(f"[TOOL] No food retrieval needed for: '{user_message[:60]}...'")
             return {"retrieved_context": ""}
-            
-        docs = food_faiss.similarity_search(user_message, k=3)
-        retrieved = "\n\n".join(d.page_content for d in docs)
-        return {"retrieved_context": retrieved}
+
     except Exception as e:
-        return {"retrieved_context": f"Error retrieving food data: {str(e)}"}
+        print(f"[TOOL] Error in tool decision: {e}")
+        # Fallback: do the retrieval to be safe
+        try:
+            retrieved = search_food_database(user_message, k=5)
+            return {"retrieved_context": retrieved}
+        except Exception:
+            return {"retrieved_context": ""}
