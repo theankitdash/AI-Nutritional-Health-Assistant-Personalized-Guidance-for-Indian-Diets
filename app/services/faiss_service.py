@@ -6,6 +6,7 @@ from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.embeddings import Embeddings
 from sentence_transformers import SentenceTransformer
 from typing import List, Tuple
+import numpy as np
 
 
 class SentenceTransformerEmbeddings(Embeddings):
@@ -27,8 +28,9 @@ class SentenceTransformerEmbeddings(Embeddings):
 # Initialize embedding model once
 embedding_model = None
 
-# Metadata store (loaded alongside FAISS)
-food_metadata = []
+# In-memory caches (loaded once at startup, never re-read from disk)
+food_metadata: List[dict] = []
+food_texts_cache: List[str] = []
 
 
 def get_embedding_model():
@@ -41,26 +43,26 @@ def get_embedding_model():
 
 def load_faiss_index():
     """Load FAISS index for food data with metadata."""
-    global food_metadata
+    global food_metadata, food_texts_cache
     try:
         # Load FAISS index
         food_index = faiss.read_index("app/food_dataset/index.faiss")
         
-        # Load texts from JSON
+        # Load texts from JSON — cached in memory for the lifetime of the process
         with open("app/food_dataset/index.json", encoding="utf-8") as f:
-            food_texts = json.load(f)
+            food_texts_cache = json.load(f)
         
         # Load metadata
         try:
             with open("app/food_dataset/metadata.json", encoding="utf-8") as f:
                 food_metadata = json.load(f)
         except FileNotFoundError:
-            food_metadata = [{} for _ in food_texts]
+            food_metadata = [{} for _ in food_texts_cache]
             print("Warning: metadata.json not found, using empty metadata.")
         
         # Convert to LangChain Documents with metadata
         food_docs = []
-        for i, text in enumerate(food_texts):
+        for i, text in enumerate(food_texts_cache):
             meta = food_metadata[i] if i < len(food_metadata) else {}
             food_docs.append(Document(page_content=text, metadata=meta))
 
@@ -80,12 +82,8 @@ def load_faiss_index():
 
 
 def get_food_texts() -> List[str]:
-    """Return the raw text list (used by hybrid retriever)."""
-    try:
-        with open("app/food_dataset/index.json", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return []
+    """Return the cached text list (loaded once at startup, never re-reads disk)."""
+    return food_texts_cache
 
 
 def get_food_metadata() -> List[dict]:
@@ -102,7 +100,7 @@ def initialize_faiss_indexes():
     global food_faiss
     food_faiss = load_faiss_index()
     if food_faiss:
-        print("FAISS food index loaded successfully!")
+        print(f"FAISS food index loaded successfully! ({len(food_texts_cache)} documents cached in memory)")
     else:
         print("Failed to load FAISS food index!")
 
@@ -121,7 +119,6 @@ def faiss_search_with_indices(query: str, k: int = 20) -> List[Tuple[int, Docume
         embeddings = get_embedding_model()
         query_embedding = embeddings.embed_query(query)
         
-        import numpy as np
         query_vec = np.array([query_embedding], dtype="float32")
         
         # Search the raw FAISS index directly
@@ -129,8 +126,9 @@ def faiss_search_with_indices(query: str, k: int = 20) -> List[Tuple[int, Docume
         distances, indices = raw_index.search(query_vec, k)
         
         results = []
-        texts = get_food_texts()
-        meta_list = get_food_metadata()
+        # Use cached lists — no disk I/O
+        texts = food_texts_cache
+        meta_list = food_metadata
         
         for i, idx in enumerate(indices[0]):
             if idx == -1:

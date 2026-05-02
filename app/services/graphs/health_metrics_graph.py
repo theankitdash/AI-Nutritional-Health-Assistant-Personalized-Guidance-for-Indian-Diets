@@ -1,6 +1,6 @@
 from typing import TypedDict, Optional
 from langgraph.graph import StateGraph, END
-from app.db_connect import connect_db
+from app.db_connect import get_pool
 import app.health_metrics as health_metrics
 from datetime import date
 
@@ -47,23 +47,21 @@ class HealthMetricsState(TypedDict):
     error: Optional[str]
 
 
-# Node: Fetch user data from database
+# Node: Fetch user data from database (uses connection pool now)
 async def fetch_user_data_node(state: HealthMetricsState) -> HealthMetricsState:
     """Fetch personal details, preferences, and health conditions from DB."""
     try:
-        conn = await connect_db()
-        
-        personal = await conn.fetchrow(
-            "SELECT * FROM personal_details WHERE email=$1", state["email"]
-        )
-        preferences = await conn.fetchrow(
-            "SELECT * FROM preferences WHERE email=$1", state["email"]
-        )
-        health_cond = await conn.fetchrow(
-            "SELECT * FROM health_conditions WHERE email=$1", state["email"]
-        )
-        
-        await conn.close()
+        pool = get_pool()
+        async with pool.acquire() as conn:
+            personal = await conn.fetchrow(
+                "SELECT * FROM personal_details WHERE email=$1", state["email"]
+            )
+            preferences = await conn.fetchrow(
+                "SELECT * FROM preferences WHERE email=$1", state["email"]
+            )
+            health_cond = await conn.fetchrow(
+                "SELECT * FROM health_conditions WHERE email=$1", state["email"]
+            )
         
         if not personal or not preferences:
             state["error"] = "Missing user profile data"

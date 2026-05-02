@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, user_profile, chat
+from app.db_connect import init_db
 from app.services.faiss_service import initialize_faiss_indexes
 from app.services.bm25_service import initialize_bm25
 from app.services.hybrid_retriever import initialize_reranker
@@ -22,7 +23,10 @@ app.add_middleware(
 # Load all indexes and models once at startup
 @app.on_event("startup")
 async def startup_event():
-    """Load FAISS index, BM25 index, and Cross-Encoder reranker at startup."""
+    """Initialize DB pool, FAISS index, BM25 index, and reranker at startup."""
+    print("Initializing database connection pool...")
+    await init_db()
+
     print("Loading FAISS food index...")
     initialize_faiss_indexes()
     

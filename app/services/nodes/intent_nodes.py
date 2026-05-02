@@ -1,6 +1,7 @@
 from app.services.nvidia_api_service import call_nvidia_api
 
-def classify_intent_node(state: dict):
+
+async def classify_intent_node(state: dict):
     """Classify the user's intent to route to appropriate handler."""
     user_message = state.get("user_message", "")
     
@@ -19,7 +20,8 @@ Respond with ONLY the category name (meal_plan, nutrition_query, health_advice, 
 
     try:
         messages = [{"role": "user", "content": classify_prompt}]
-        result = call_nvidia_api(messages).strip().lower()
+        # max_tokens=16: response is a single word/phrase
+        result = (await call_nvidia_api(messages, max_tokens=16, temperature=0.0)).strip().lower()
         
         valid_intents = ["meal_plan", "nutrition_query", "health_advice", "general"]
         if result in valid_intents:

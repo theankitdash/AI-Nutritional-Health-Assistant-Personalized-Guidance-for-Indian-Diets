@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Cookie
 from app.models import (PersonalDetails, Preferences, HealthConditions)
 from app.routers.auth import get_session_email
 from app.db_connect import connect_db
-from app.services.cache import clear_user_cache
+from app.services.cache import clear_user_cache, clear_health_metrics_cache
 import traceback
 import asyncpg
 
@@ -40,8 +40,9 @@ async def add_personal_details(details: PersonalDetails, session_id: str = Cooki
         if conn:
             await conn.close()
 
-    # Invalidate cache so next chat message fetches fresh data
+    # Invalidate caches so next chat message fetches fresh data
     clear_user_cache(session_id)
+    clear_health_metrics_cache(email)
 
     return {"message": "Personal details added successfully."}
     
@@ -96,8 +97,9 @@ async def add_preferences(preferences: Preferences, session_id: str = Cookie(Non
         if conn:
             await conn.close()
 
-    # Invalidate cache so next chat message fetches fresh data
+    # Invalidate caches so next chat message fetches fresh data
     clear_user_cache(session_id)
+    clear_health_metrics_cache(email)
 
     return {"message": "Food preferences saved successfully."}
     
@@ -143,8 +145,9 @@ async def add_health_conditions(health_conditions: HealthConditions, session_id:
         if conn:
             await conn.close()
 
-    # Invalidate cache so next chat message fetches fresh data
+    # Invalidate caches so next chat message fetches fresh data
     clear_user_cache(session_id)
+    clear_health_metrics_cache(email)
 
     return {"message": "Health conditions saved successfully."}
     
