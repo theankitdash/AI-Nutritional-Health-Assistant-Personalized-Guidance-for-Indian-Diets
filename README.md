@@ -1,13 +1,13 @@
 # 🥗 AI Nutritional Health Assistant — Personalized Guidance for Indian Diets
 
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.128.0-009688.svg)](https://fastapi.tiangolo.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.135.1-009688.svg)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black.svg)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791.svg)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-A conversational AI nutrition assistant specializing in Indian diets. Built with **FastAPI**, **LangGraph**, and an advanced **RAG (Retrieval-Augmented Generation)** pipeline powered by **Hybrid Search (BM25 + FAISS)**, **Cross-Encoder Re-ranking**, and **Agentic Tool Calling**. Delivers context-aware nutrition guidance across multiple Indian regional cuisines with a modern **Next.js 16 + TypeScript** frontend and **PostgreSQL** database backend.
+A conversational AI nutrition assistant specializing in Indian diets. Built with **FastAPI**, **LangGraph**, and an advanced **RAG (Retrieval-Augmented Generation)** pipeline powered by **Hybrid Search (BM25 + FAISS)**, **Cross-Encoder Re-ranking**, and **deterministic intent-based routing**. Features an optimized 2-LLM-call pipeline with multi-layer caching (connection pooling, in-memory profile/metrics cache, frontend API cache). Delivers context-aware nutrition guidance across multiple Indian regional cuisines with a modern **Next.js 16 + TypeScript** frontend and **PostgreSQL** database backend.
 
 ---
 
@@ -32,17 +32,17 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 
 #### Backend
 - **FastAPI** — High-performance async Python web framework
-- **LangGraph** — Advanced workflow orchestration for AI agent pipelines with agentic tool calling
+- **LangGraph** — Workflow orchestration for AI pipelines with deterministic intent-based routing
 - **LangChain** — LLM application framework (Document, VectorStore, Embeddings)
 - **FAISS** — Dense vector similarity search for RAG pipeline
 - **BM25 (rank-bm25)** — Sparse keyword retrieval for hybrid search
 - **Sentence Transformers** — Text embeddings (`all-MiniLM-L6-v2`) + Cross-Encoder re-ranking (`ms-marco-MiniLM-L-6-v2`)
 - **Reciprocal Rank Fusion (RRF)** — Combines BM25 + FAISS retrieval scores
 - **PostgreSQL 17** — Relational storage for users, profiles, sessions
-- **asyncpg** — Async PostgreSQL adapter (direct SQL, no ORM)
+- **asyncpg** — Async PostgreSQL adapter with **connection pooling** (`min_size=2, max_size=10`), direct SQL (no ORM)
 - **Pydantic** — Request/response data validation
 - **bcrypt** — Password hashing for authentication
-- **NVIDIA NIM API** — LLM inference endpoint (`google/gemma-3-27b-it`)
+- **NVIDIA NIM API** — LLM inference endpoint (`google/gemma-4-31b-it`)
 
 #### Frontend
 - **Next.js 16** — React framework with App Router
@@ -99,18 +99,18 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │                         ORCHESTRATION LAYER (LangGraph)                        │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                        Chat Graph (Main Pipeline)                       │   │
+│  │                   Chat Graph (Optimized — 2 LLM calls)                  │   │
 │  │                                                                         │   │
 │  │  ┌─────────────────────────────────────────────────────────────────┐     │   │
-│  │  │        Parallel Retrieval Node (asyncio.gather)                 │     │   │
+│  │  │   Fetch Context Node (cached — no DB calls on cache hit)        │     │   │
 │  │  │  ┌──────────────────┐  ┌──────────────────────────────────┐    │     │   │
-│  │  │  │ Retrieve User    │  │ Compute Health Metrics           │    │     │   │
-│  │  │  │ Profile (DB)     │  │ (sub-graph)                      │    │     │   │
+│  │  │  │ User Profile     │  │ Health Metrics                    │    │     │   │
+│  │  │  │ (session cache)  │  │ (email cache, sub-graph on miss)  │    │     │   │
 │  │  │  └──────────────────┘  └──────────────────────────────────┘    │     │   │
 │  │  └────────────────────────────┬────────────────────────────────────┘     │   │
 │  │                               ▼                                         │   │
 │  │  ┌────────────────────────────────────────────────────────────────┐      │   │
-│  │  │         Intent Classification Node (LLM-powered)              │      │   │
+│  │  │    Intent Classification Node (LLM call #1)                   │      │   │
 │  │  │    Classifies: meal_plan | nutrition_query | health_advice |   │      │   │
 │  │  │                 general                                       │      │   │
 │  │  └──────────┬───────────┬───────────────┬────────────────┬───────┘      │   │
@@ -118,10 +118,10 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │  │             ▼           └───────┬───────┘                ▼              │   │
 │  │  ┌──────────────┐              ▼                  ┌─────────────┐      │   │
 │  │  │  Meal Plan   │  ┌──────────────────────────┐   │   General   │      │   │
-│  │  │  Handler     │  │  Tool Decision Node      │   │   Handler   │      │   │
-│  │  │ (sub-graph,  │  │  (LLM decides: need food │   │ (no food    │      │   │
-│  │  │  uses hybrid │  │   data? YES → hybrid     │   │  lookup)    │      │   │
-│  │  │  search)     │  │   search, NO → skip)     │   │             │      │   │
+│  │  │  Handler     │  │  Hybrid Search Node      │   │   Handler   │      │   │
+│  │  │ (own hybrid  │  │  (deterministic — always  │   │ (no food    │      │   │
+│  │  │  search,     │  │   runs for nutrition/     │   │  lookup)    │      │   │
+│  │  │  k=10)       │  │   health intents)         │   │             │      │   │
 │  │  └──────┬───────┘  └──────┬───────────┬───────┘   └──────┬──────┘      │   │
 │  │         │                 ▼           ▼                   │             │   │
 │  │         │          ┌────────────┐ ┌──────────────┐        │             │   │
@@ -130,18 +130,13 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │  │         │          │  Handler   │ │   Handler    │        │             │   │
 │  │         │          └─────┬──────┘ └──────┬───────┘        │             │   │
 │  │         └────────────────┴───────────────┴────────────────┘             │   │
+│  │                                    │  (LLM call #2)                     │   │
 │  │                                    ▼                                    │   │
-│  │                    ┌──────────────────────────┐                          │   │
-│  │                    │  Summary Node (LLM)      │                          │   │
-│  │                    │  Updates conversation    │                          │   │
-│  │                    │  summary for memory      │                          │   │
-│  │                    └──────────────────────────┘                          │   │
-│  └──────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                     Meal Planning Graph (Sub-pipeline)                   │   │
-│  │  analyze_requirements → fetch_health_metrics → fetch_food_context →      │   │
-│  │  generate_meals (LLM) → validate_nutrition (LLM) → format_meal_plan     │   │
+│  │                              ┌──────────┐                               │   │
+│  │                              │   END    │                               │   │
+│  │                              └──────────┘                               │   │
+│  │                                                                         │   │
+│  │         Summary runs as FastAPI BackgroundTask (not in graph)           │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
@@ -161,29 +156,31 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │  ┌──────────────────────────┐  │         │  ┌────────────────────────────────┐   │
 │  │  Hybrid Retrieval Engine │  │         │  │     NVIDIA NIM API Service     │   │
 │  │  ┌────────────────────┐  │  │         │  │  ┌──────────────────────────┐  │   │
-│  │  │ FAISS Dense Search │  │  │         │  │  │  Model: google/gemma-3-  │  │   │
-│  │  │ + BM25 Sparse      │  │  │         │  │  │         27b-it           │  │   │
+│  │  │ FAISS Dense Search │  │  │         │  │  │  Model: google/gemma-4-  │  │   │
+│  │  │ + BM25 Sparse      │  │  │         │  │  │         31b-it           │  │   │
 │  │  │ → RRF Fusion       │  │  │         │  │  │                          │  │   │
 │  │  │ → Cross-Encoder    │  │  │         │  │  │                          │  │   │
 │  │  │   Re-ranker        │  │  │         │  │  └──────────────────────────┘  │   │
 │  │  └────────────────────┘  │  │         │  └────────────────────────────────┘   │
 │  │  Files:                  │  │         │                                       │
 │  │   index.faiss            │  │         │  Used for: Intent Classification,     │
-│  │   index.json             │  │         │  Tool Decision, Meal Planning,        │
-│  │   metadata.json          │  │         │  Nutrition Queries, Health Advice,    │
-│  │   bm25_corpus.json       │  │         │  Conversation Summary                │
+│  │   bm25_corpus.json       │  │         │  Nutrition Queries, Health Advice     │
 │  └──────────────────────────┘  │         └───────────────────────────────────────┘
 │                                │
 │  ┌──────────────────────────┐  │         ┌───────────────────────────────────────┐
 │  │    PostgreSQL 17         │  │         │          CACHING LAYER                │ 
 │  │  ┌────────────────────┐  │  │         │                                       │
 │  │  │  credentials       │  │  │         │  ┌────────────────────────────────┐   │
-│  │  │  personal_details  │  │  │         │  │  In-Memory Python Dicts        │   │
+│  │  │  personal_details  │  │  │         │  │  Backend (In-Memory Dicts)     │   │
 │  │  │  preferences       │  │  │         │  │  • user_profile_cache(by sess) │   │
-│  │  │  health_conditions │  │  │         │  │  • conversation_summaries      │   │
-│  │  │  sessions          │  │  │         │  └────────────────────────────────┘   │
-│  │  └────────────────────┘  │  │         └───────────────────────────────────────┘
-│  └──────────────────────────┘  │
+│  │  │  health_conditions │  │  │         │  │  • health_metrics_cache(email) │   │
+│  │  │  sessions          │  │  │         │  │  • conversation_summaries      │   │
+│  │  │  (connection pool)  │  │  │         │  ├────────────────────────────────┤   │
+│  │  └────────────────────┘  │  │         │  │  Frontend (ApiCache + TTL)     │   │
+│  │                           │  │         │  │  • auth_status, profile,       │   │
+│  │                           │  │         │  │    preferences, health (5min)  │   │
+│  │                           │  │         │  └────────────────────────────────┘   │
+│  └──────────────────────────┘  │         └───────────────────────────────────────┘
 │                                │
 │  ┌──────────────────────────┐  │
 │  │  Food Datasets (Source)  │  │
@@ -194,17 +191,17 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 └────────────────────────────────┘
 ```
 
-**Chat Pipeline Flow (LangGraph with Agentic Tool Calling):**
+**Chat Pipeline Flow (Optimized — 2 LLM calls per message):**
 1. User message arrives at `/chat/` endpoint → session validated via cookie
-2. **Parallel Retrieval** — User profile and health metrics fetched concurrently (`asyncio.gather`). Food retrieval is **deferred** to the tool decision node.
-3. **Intent Classification** — LLM classifies intent into `meal_plan`, `nutrition_query`, `health_advice`, or `general`
-4. **Agentic Tool Decision** — For `nutrition_query` and `health_advice` intents, the LLM decides whether food database retrieval is needed:
-   - **YES** → Runs **Hybrid Search** (BM25 + FAISS → RRF fusion → Cross-Encoder re-ranking) to retrieve the top 5 most relevant foods
-   - **NO** → Skips food retrieval entirely (e.g., for follow-up questions that don't need new data)
-5. **Conditional Routing** — `meal_plan` uses its own hybrid search internally; `general` never queries the food database
-6. **Handler Execution** — Handler generates response using user context + health metrics + (optional) food data + LLM
-7. **Summary Update** — Conversation summary updated for multi-turn memory
-8. Response returned to frontend
+2. **Context Fetch (Cached)** — User profile (cached per session) and health metrics (cached per email) loaded from in-memory cache; only queries DB on cache miss
+3. **Intent Classification (LLM call #1)** — LLM classifies intent into `meal_plan`, `nutrition_query`, `health_advice`, or `general`
+4. **Deterministic Routing** — Intent-based routing with no additional LLM call:
+   - `nutrition_query` / `health_advice` → **Hybrid Search** (BM25 + FAISS → RRF → Cross-Encoder re-ranking, top 5) → Handler
+   - `meal_plan` → Handler (runs its own hybrid search internally, top 10)
+   - `general` → Handler directly (no food lookup)
+5. **Handler Execution (LLM call #2)** — Generates response using user context + health metrics + (optional) food data
+6. **Background Summary** — Conversation summary updated asynchronously via FastAPI `BackgroundTasks` (not in the critical path)
+7. Response returned to frontend immediately
 
 **Hybrid Retrieval Pipeline (Two-Stage):**
 - **Stage 1 — Fetch:** BM25 sparse search (k=20) + FAISS dense search (k=20) → fused via **Reciprocal Rank Fusion (RRF)**
@@ -229,27 +226,27 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │   │   └── user_profile.py           # Profile CRUD (personal, preferences, health)
 │   ├── services/                     # Business logic & AI services
 │   │   ├── graphs/                   # LangGraph pipeline definitions
-│   │   │   ├── chat_graph.py         # Main chat orchestration graph (agentic tool calling)
+│   │   │   ├── chat_graph.py         # Main chat graph (deterministic intent-based routing, 2 LLM calls)
 │   │   │   ├── health_metrics_graph.py  # Health metrics computation graph
 │   │   │   └── meal_planning_graph.py   # Meal plan generation graph (hybrid search)
 │   │   ├── nodes/                    # LangGraph node implementations
-│   │   │   ├── intent_nodes.py       # Intent classification & routing
-│   │   │   ├── retrieval_nodes.py    # User, health retrieval + agentic tool_decision_node
-│   │   │   └── handler_nodes.py      # Specialized response handlers
+│   │   │   ├── intent_nodes.py       # Intent classification & deterministic routing
+│   │   │   ├── retrieval_nodes.py    # Cached context fetch + food search node
+│   │   │   └── handler_nodes.py      # Response handlers + background summary update
 │   │   ├── faiss_service.py          # FAISS index loading, metadata, & search
 │   │   ├── bm25_service.py           # BM25 sparse retrieval service
 │   │   ├── hybrid_retriever.py       # Hybrid search (BM25+FAISS → RRF → Cross-Encoder)
-│   │   ├── tools.py                  # Agentic tool functions (search_food_database, etc.)
-│   │   ├── nvidia_api_service.py     # NVIDIA NIM API integration
-│   │   └── cache.py                  # In-memory session caching
+│   │   ├── tools.py                  # Food database search tool
+│   │   ├── nvidia_api_service.py     # NVIDIA NIM API integration (async via thread)
+│   │   └── cache.py                  # Multi-layer caching (profile, health metrics, summaries)
 │   ├── food_dataset/                 # Pre-built search indexes
 │   │   ├── index.faiss               # FAISS dense vector index
 │   │   ├── index.json                # Food text data for docstore
 │   │   ├── metadata.json             # Structured metadata per food item
 │   │   └── bm25_corpus.json          # Tokenized corpus for BM25 sparse search
-│   ├── main.py                       # FastAPI app entry point + CORS + startup
+│   ├── main.py                       # FastAPI app entry point + CORS + startup initialization
 │   ├── models.py                     # Pydantic request/response models
-│   ├── db_connect.py                 # PostgreSQL connection + table creation
+│   ├── db_connect.py                 # PostgreSQL connection pooling (asyncpg.Pool) + table creation
 │   ├── health_metrics.py             # 25+ health metric calculators
 │   ├── requirements.txt              # Python dependencies
 │   ├── dockerfile                    # Backend Docker image
@@ -283,6 +280,12 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │   │   │   └── ToastContext.tsx      # Toast notification state
 │   │   ├── hooks/                    # Custom React hooks
 │   │   │   └── useModalForm.ts       # Form state management for modals
+│   │   ├── lib/                      # Shared utilities & API layer
+│   │   │   ├── api.ts               # Centralized API client with caching integration
+│   │   │   ├── apiCache.ts          # TTL-based API response cache (5-min default)
+│   │   │   ├── types.ts             # TypeScript interfaces for all API types
+│   │   │   ├── formConstants.ts     # Form option constants (food, health, lifestyle)
+│   │   │   └── utils.ts             # Validation utilities (email, password, cn)
 │   │   └── styles/                   # CSS Modules
 │   │       ├── globals.css           # Global styles
 │   │       └── components/           # Component-scoped styles
@@ -521,7 +524,7 @@ The application uses curated Indian food nutrition datasets:
 - Structured metadata (calories, protein, carbs, fat, etc.) extracted per food item
 - Indexes stored in `app/food_dataset/` (`index.faiss`, `index.json`, `metadata.json`, `bm25_corpus.json`)
 - **Two-stage retrieval**: BM25 + FAISS → Reciprocal Rank Fusion → Cross-Encoder re-ranking
-- **Agentic tool calling**: LLM decides whether food database retrieval is needed per query
+- **Deterministic routing**: Food retrieval is triggered automatically based on classified intent (no extra LLM call)
 
 ---
 
