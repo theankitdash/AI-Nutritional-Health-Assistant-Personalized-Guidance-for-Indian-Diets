@@ -1,6 +1,6 @@
 # 🥗 AI Nutritional Health Assistant — Personalized Guidance for Indian Diets
 
-[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.135.1-009688.svg)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black.svg)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
