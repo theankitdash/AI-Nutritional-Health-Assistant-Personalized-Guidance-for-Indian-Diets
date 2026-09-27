@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 from langchain_core.documents import Document
 from sentence_transformers import CrossEncoder
@@ -25,7 +26,7 @@ def reciprocal_rank_fusion(
     """
     Fuse FAISS and BM25 results using Reciprocal Rank Fusion.
     Returns a list of document indices sorted by fused score.
-    
+
     Args:
         faiss_results: List of (doc_index, Document) from FAISS
         bm25_results: List of (doc_index, score) from BM25
@@ -46,10 +47,10 @@ def reciprocal_rank_fusion(
     return sorted_indices
 
 
-def rerank(query: str, documents: List[Document], top_k: int = 5) -> List[Document]:
+def _rerank_sync(query: str, documents: List[Document], top_k: int = 5) -> List[Document]:
     """
-    Re-rank documents using the Cross-Encoder model.
-    Returns the top_k most relevant documents.
+    Synchronous Cross-Encoder reranking — always called via run_in_executor
+    so it never blocks the async event loop.
     """
     if reranker_model is None or not documents:
         return documents[:top_k]
@@ -63,20 +64,21 @@ def rerank(query: str, documents: List[Document], top_k: int = 5) -> List[Docume
     return [doc for _, doc in scored_docs[:top_k]]
 
 
-def hybrid_search(query: str, k_final: int = 5) -> List[Document]:
+async def hybrid_search(query: str, k_final: int = 5) -> List[Document]:
     """
-    Two-stage hybrid retrieval:
-      Stage 1: Run BM25 + FAISS in parallel, fuse with RRF
-      Stage 2: Re-rank the fused candidates with a Cross-Encoder
-    
+    Two-stage hybrid retrieval (fully async):
+      Stage 1: Run BM25 + FAISS (fast sync calls), fuse with RRF
+      Stage 2: Re-rank fused candidates with Cross-Encoder via thread executor
+               (non-blocking — was the #1 CPU bottleneck)
+
     Returns the top k_final most relevant Documents.
     """
-    k_fetch = 20  # Number of candidates from each retriever
+    k_fetch = 10  # Reduced from 20 — halves CrossEncoder inference time with minimal recall loss
 
-    # Stage 1a: FAISS dense retrieval
+    # Stage 1a: FAISS dense retrieval (fast, uses cached embedding)
     faiss_results = faiss_search_with_indices(query, k=k_fetch)
 
-    # Stage 1b: BM25 sparse retrieval
+    # Stage 1b: BM25 sparse retrieval (fast, in-memory)
     bm25_results = bm25_search(query, k=k_fetch)
 
     # Fuse results with RRF
@@ -94,5 +96,7 @@ def hybrid_search(query: str, k_final: int = 5) -> List[Document]:
     if not candidate_docs:
         return []
 
-    # Stage 2: Re-rank with Cross-Encoder
-    return rerank(query, candidate_docs, top_k=k_final)
+    # Stage 2: Cross-Encoder reranking — offloaded to thread executor so the
+    # CPU-bound inference does NOT block the async event loop
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _rerank_sync, query, candidate_docs, k_final)

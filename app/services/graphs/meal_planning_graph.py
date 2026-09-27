@@ -1,8 +1,9 @@
+import asyncio
 from typing import TypedDict, Optional, List
 from langgraph.graph import StateGraph, END
-from app.services.nvidia_api_service import call_nvidia_api
+from app.services.groq_api_service import call_groq_api
 from app.services.graphs.health_metrics_graph import compute_health_metrics
-from app.db_connect import connect_db
+from app.db_connect import get_pool
 
 
 class MealPlanState(TypedDict):
@@ -48,19 +49,17 @@ async def analyze_requirements_node(state: MealPlanState) -> MealPlanState:
     
     # Fetch user profile
     try:
-        conn = await connect_db()
-        
-        personal = await conn.fetchrow(
-            "SELECT * FROM personal_details WHERE email=$1", state["email"]
+        pool = get_pool()
+
+        async def _fetch(query, *args):
+            async with pool.acquire() as conn:
+                return await conn.fetchrow(query, *args)
+
+        personal, preferences, health_cond = await asyncio.gather(
+            _fetch("SELECT * FROM personal_details WHERE email=$1", state["email"]),
+            _fetch("SELECT * FROM preferences WHERE email=$1", state["email"]),
+            _fetch("SELECT * FROM health_conditions WHERE email=$1", state["email"]),
         )
-        preferences = await conn.fetchrow(
-            "SELECT * FROM preferences WHERE email=$1", state["email"]
-        )
-        health_cond = await conn.fetchrow(
-            "SELECT * FROM health_conditions WHERE email=$1", state["email"]
-        )
-        
-        await conn.close()
         
         # Build profile context
         profile_parts = []
@@ -127,26 +126,28 @@ async def fetch_health_metrics_node(state: MealPlanState) -> MealPlanState:
     return state
 
 
-def fetch_food_context_node(state: MealPlanState) -> MealPlanState:
-    """Retrieve relevant Indian food options using hybrid search."""
+async def fetch_food_context_node(state: MealPlanState) -> MealPlanState:
+    """Retrieve relevant Indian food options using hybrid search.
+
+    """
     if state.get("error"):
         return state
-    
+
     try:
         from app.services.hybrid_retriever import hybrid_search
-        
+
         # Search for foods based on preferences using hybrid retrieval
         query = f"Indian {state.get('user_request', 'meal')} healthy"
-        docs = hybrid_search(query, k_final=10)
+        docs = await hybrid_search(query, k_final=10)
         state["food_context"] = "\n".join(d.page_content for d in docs)
-        
+
     except Exception as e:
         state["food_context"] = ""
-        
+
     return state
 
 
-def generate_meals_node(state: MealPlanState) -> MealPlanState:
+async def generate_meals_node(state: MealPlanState) -> MealPlanState:
     """Generate personalized meal plan using LLM."""
     if state.get("error"):
         return state
@@ -191,13 +192,13 @@ Ensure the total daily calories align with the target.
 Use authentic Indian dishes that are practical to prepare."""
 
     messages = [{"role": "user", "content": prompt}]
-    result = call_nvidia_api(messages)
+    result = await call_groq_api(messages)
     state["meal_plan_raw"] = result.strip()
     
     return state
 
 
-def validate_nutrition_node(state: MealPlanState) -> MealPlanState:
+async def validate_nutrition_node(state: MealPlanState) -> MealPlanState:
     """Validate the meal plan against user's health requirements."""
     if state.get("error"):
         return state
@@ -223,7 +224,7 @@ Check for:
 If there are issues, list them. If the plan is good, say "VALIDATED" and briefly explain why it's suitable."""
 
     messages = [{"role": "user", "content": validate_prompt}]
-    result = call_nvidia_api(messages)
+    result = await call_groq_api(messages)
     state["validation_result"] = result.strip()
     
     return state

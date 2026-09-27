@@ -1,8 +1,12 @@
 from app.services.hybrid_retriever import hybrid_search
 
-def search_food_database(query: str, k: int = 5) -> str:
-    
-    docs = hybrid_search(query, k_final=k)
+
+async def search_food_database(query: str, k: int = 5) -> str:
+    """
+    Search the hybrid food database and return a formatted string of results.
+    Now async — awaits hybrid_search (which runs CrossEncoder in an executor).
+    """
+    docs = await hybrid_search(query, k_final=k)
     if not docs:
         return "No relevant food items found in the database."
 
@@ -22,9 +26,12 @@ def search_food_database(query: str, k: int = 5) -> str:
     return "\n\n".join(results)
 
 
-def get_nutrition_facts(food_name: str) -> str:
-   
-    docs = hybrid_search(food_name, k_final=3)
+async def get_nutrition_facts(food_name: str) -> str:
+    """
+    Return full nutrition facts for a specific food item.
+    Now async — awaits hybrid_search.
+    """
+    docs = await hybrid_search(food_name, k_final=3)
     if not docs:
         return f"No nutrition data found for '{food_name}'."
 

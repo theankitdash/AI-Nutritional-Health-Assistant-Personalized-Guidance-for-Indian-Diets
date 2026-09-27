@@ -1,21 +1,20 @@
-from app.services.nvidia_api_service import call_nvidia_api
+from app.services.groq_api_service import call_groq_api
 
 async def handle_meal_plan_node(state: dict):
     """Handle meal planning with a single LLM call (generate + validate).
-    
+
     Uses user_context and health_metrics_context already in state
     (fetched once by fetch_context_node) instead of re-querying the DB.
-    """
-    from app.services.tools import search_food_database
 
+    """
     user_message = state.get("user_message", "")
 
     # Determine plan duration from the message
     lower_msg = user_message.lower()
     duration = "weekly" if ("week" in lower_msg or "7 day" in lower_msg) else "daily"
 
-    # Get food context via hybrid search (no LLM call)
-    food_context = search_food_database(user_message, k=10)
+    # Use food context already retrieved by search_food_node (Fix #3)
+    food_context = state.get("retrieved_context", "")
 
     prompt = f"""You are an expert Indian nutrition dietitian. Create a personalized meal plan
 AND validate it against the user's dietary restrictions and health conditions.
@@ -47,7 +46,7 @@ any potential concerns. Use authentic, practical Indian dishes."""
 
     try:
         messages = [{"role": "user", "content": prompt}]
-        result = await call_nvidia_api(messages, max_tokens=4096)
+        result = await call_groq_api(messages, max_tokens=4096)
         meal_plan = result.strip()
 
         formatted = f"🍽️ **Your Personalized Indian Meal Plan**\n\n{meal_plan}"
@@ -80,7 +79,7 @@ Keep your response concise and under 100 words unless the user asks for details.
 
     try:
         messages = [{"role": "user", "content": prompt}]
-        result = await call_nvidia_api(messages, max_tokens=512)
+        result = await call_groq_api(messages, max_tokens=512)
         return {"response": result.strip()}
     except Exception as e:
         return {"response": f"Error processing nutrition query: {str(e)}"}
@@ -110,7 +109,7 @@ Note: This is general nutrition guidance, not medical advice."""
 
     try:
         messages = [{"role": "user", "content": prompt}]
-        result = await call_nvidia_api(messages, max_tokens=512)
+        result = await call_groq_api(messages, max_tokens=512)
         return {"response": result.strip()}
     except Exception as e:
         return {"response": f"Error processing health advice: {str(e)}"}
@@ -133,7 +132,7 @@ Keep your response friendly and concise (under 100 words). Only elaborate if the
 
     try:
         messages = [{"role": "user", "content": prompt}]
-        result = await call_nvidia_api(messages, max_tokens=256)
+        result = await call_groq_api(messages, max_tokens=256)
         return {"response": result.strip()}
     except Exception as e:
         return {"response": f"Error processing request: {str(e)}"}
@@ -145,7 +144,7 @@ async def update_summary(
     existing_summary: str,
 ) -> str:
     """Update conversation summary — runs as a background task, NOT in the graph.
-    
+
     This was the old summary_node. Moving it out of the critical path saves
     2-5 seconds per message since the user doesn't wait for it.
     """
@@ -166,7 +165,7 @@ Update the summary using ONLY explicit information.
 
     try:
         messages = [{"role": "user", "content": summary_prompt}]
-        result = await call_nvidia_api(messages, max_tokens=256)
+        result = await call_groq_api(messages, max_tokens=256)
         return result.strip()
     except Exception:
         return existing_summary

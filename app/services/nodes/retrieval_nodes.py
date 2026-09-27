@@ -1,8 +1,10 @@
+import asyncio
 from app.db_connect import get_pool
 from app.services.cache import user_profile_cache, health_metrics_cache
 
+
 async def fetch_context_node(state: dict):
-    
+
     email = state.get("user_email", "")
     session_id = state.get("session_id", "")
 
@@ -34,13 +36,25 @@ async def fetch_context_node(state: dict):
     }
 
 
+async def _fetch_row(pool, query: str, *args):
+    """Helper: acquire a fresh connection from the pool and run a single fetchrow."""
+    async with pool.acquire() as conn:
+        return await conn.fetchrow(query, *args)
+
+
 async def _fetch_user_profile(email: str) -> str:
+    """
+    Fetch user profile from DB.
+    """
     try:
         pool = get_pool()
-        async with pool.acquire() as conn:
-            personal = await conn.fetchrow("SELECT * FROM personal_details WHERE email=$1", email)
-            preferences = await conn.fetchrow("SELECT * FROM preferences WHERE email=$1", email)
-            health = await conn.fetchrow("SELECT * FROM health_conditions WHERE email=$1", email)
+
+        # Run all 3 independent queries in parallel
+        personal, preferences, health = await asyncio.gather(
+            _fetch_row(pool, "SELECT * FROM personal_details WHERE email=$1", email),
+            _fetch_row(pool, "SELECT * FROM preferences WHERE email=$1", email),
+            _fetch_row(pool, "SELECT * FROM health_conditions WHERE email=$1", email),
+        )
 
         parts = []
 
@@ -116,7 +130,13 @@ async def _compute_and_cache_health_metrics(email: str) -> str:
         return f"Could not compute health metrics: {str(e)}"
 
 
-def search_food_node(state: dict):
+async def search_food_node(state: dict):
+    """
+    Retrieve relevant food documents via hybrid search.
+
+    Now async — properly awaits the async hybrid_search / search_food_database
+    chain so CrossEncoder runs in a thread executor without blocking.
+    """
     user_message = state.get("user_message", "")
     if not user_message:
         return {"retrieved_context": ""}
@@ -124,7 +144,7 @@ def search_food_node(state: dict):
     try:
         from app.services.tools import search_food_database
         print(f"[SEARCH] Food retrieval for: '{user_message[:60]}...'")
-        retrieved = search_food_database(user_message, k=5)
+        retrieved = await search_food_database(user_message, k=5)
         return {"retrieved_context": retrieved}
     except Exception as e:
         print(f"[SEARCH] Error in food search: {e}")

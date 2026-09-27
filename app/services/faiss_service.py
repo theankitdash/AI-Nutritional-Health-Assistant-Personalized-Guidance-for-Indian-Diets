@@ -10,15 +10,15 @@ import numpy as np
 
 
 class SentenceTransformerEmbeddings(Embeddings):
-    
+
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         self.model = SentenceTransformer(model_name)
-    
+
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Embed a list of documents."""
         embeddings = self.model.encode(texts, convert_to_numpy=True)
         return embeddings.tolist()
-    
+
     def embed_query(self, text: str) -> List[float]:
         """Embed a single query text."""
         embedding = self.model.encode([text], convert_to_numpy=True)
@@ -32,6 +32,11 @@ embedding_model = None
 food_metadata: List[dict] = []
 food_texts_cache: List[str] = []
 
+# Avoids re-encoding identical queries (O(1) cache hit vs ~50–200 ms re-encode).
+# Uses simple FIFO eviction to bound memory usage.
+_EMBEDDING_CACHE: dict = {}
+_EMBEDDING_CACHE_MAX = 256
+
 
 def get_embedding_model():
     """Get or initialize the embedding model."""
@@ -41,17 +46,37 @@ def get_embedding_model():
     return embedding_model
 
 
+def get_cached_query_embedding(text: str) -> List[float]:
+    """
+    Return the query embedding, serving from cache on repeated queries.
+    Cache is bounded to _EMBEDDING_CACHE_MAX entries with FIFO eviction.
+    """
+    if text in _EMBEDDING_CACHE:
+        return _EMBEDDING_CACHE[text]
+
+    # Evict oldest entry when at capacity
+    if len(_EMBEDDING_CACHE) >= _EMBEDDING_CACHE_MAX:
+        oldest_key = next(iter(_EMBEDDING_CACHE))
+        del _EMBEDDING_CACHE[oldest_key]
+
+    model = get_embedding_model()
+    embedding = model.model.encode([text], convert_to_numpy=True)
+    result = embedding[0].tolist()
+    _EMBEDDING_CACHE[text] = result
+    return result
+
+
 def load_faiss_index():
     """Load FAISS index for food data with metadata."""
     global food_metadata, food_texts_cache
     try:
         # Load FAISS index
         food_index = faiss.read_index("app/food_dataset/index.faiss")
-        
+
         # Load texts from JSON — cached in memory for the lifetime of the process
         with open("app/food_dataset/index.json", encoding="utf-8") as f:
             food_texts_cache = json.load(f)
-        
+
         # Load metadata
         try:
             with open("app/food_dataset/metadata.json", encoding="utf-8") as f:
@@ -59,7 +84,7 @@ def load_faiss_index():
         except FileNotFoundError:
             food_metadata = [{} for _ in food_texts_cache]
             print("Warning: metadata.json not found, using empty metadata.")
-        
+
         # Convert to LangChain Documents with metadata
         food_docs = []
         for i, text in enumerate(food_texts_cache):
@@ -111,25 +136,25 @@ def get_food_faiss():
 
 
 def faiss_search_with_indices(query: str, k: int = 20) -> List[Tuple[int, Document]]:
-    
+
     if food_faiss is None:
         return []
-    
+
     try:
-        embeddings = get_embedding_model()
-        query_embedding = embeddings.embed_query(query)
-        
+        # Use cached embedding instead of re-encoding every time
+        query_embedding = get_cached_query_embedding(query)
+
         query_vec = np.array([query_embedding], dtype="float32")
-        
+
         # Search the raw FAISS index directly
         raw_index = food_faiss.index
         distances, indices = raw_index.search(query_vec, k)
-        
+
         results = []
         # Use cached lists — no disk I/O
         texts = food_texts_cache
         meta_list = food_metadata
-        
+
         for i, idx in enumerate(indices[0]):
             if idx == -1:
                 continue
@@ -138,7 +163,7 @@ def faiss_search_with_indices(query: str, k: int = 20) -> List[Tuple[int, Docume
             text = texts[idx] if idx < len(texts) else ""
             doc = Document(page_content=text, metadata=meta)
             results.append((idx, doc))
-        
+
         return results
     except Exception as e:
         print(f"Error in faiss_search_with_indices: {e}")
