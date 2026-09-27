@@ -1,62 +1,64 @@
 # 🥗 AI Nutritional Health Assistant — Personalized Guidance for Indian Diets
 
 [![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.135.1-009688.svg)](https://fastapi.tiangolo.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.141.1-009688.svg)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black.svg)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791.svg)](https://www.postgresql.org/)
+[![Groq](https://img.shields.io/badge/Groq-LPU%20Inference-f55036.svg)](https://groq.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-A conversational AI nutrition assistant specializing in Indian diets. Built with **FastAPI**, **LangGraph**, and an advanced **RAG (Retrieval-Augmented Generation)** pipeline powered by **Hybrid Search (BM25 + FAISS)**, **Cross-Encoder Re-ranking**, and **deterministic intent-based routing**. Features an optimized 2-LLM-call pipeline with multi-layer caching (connection pooling, in-memory profile/metrics cache, frontend API cache). Delivers context-aware nutrition guidance across multiple Indian regional cuisines with a modern **Next.js 16 + TypeScript** frontend and **PostgreSQL** database backend.
+An intelligent conversational AI nutrition assistant engineered specifically for Indian diets and regional food cultures. Powered by **FastAPI**, **LangGraph**, **Groq LPU high-speed inference**, and a two-stage **Hybrid Retrieval-Augmented Generation (RAG)** pipeline combining **BM25 sparse keyword retrieval**, **FAISS dense vector search**, **Reciprocal Rank Fusion (RRF)**, and **Cross-Encoder re-ranking**.
+
+Features sub-millisecond local intent routing, an asynchronous single-call critical path, background conversation summarization, multi-tier caching (embedding cache, session cache, health metrics cache, and frontend TTL cache), and a sleek **Next.js 16 + TypeScript** responsive interface backed by **PostgreSQL 17**.
 
 ---
 
 ## ✨ Key Features
 
-- 🍛 **Regional Indian Cuisine Support** — North, South, East, and West Indian cuisines
-- 🤖 **AI-Powered Recommendations** — Personalized meal suggestions using RAG + LLM
-- 💬 **Conversational Interface** — Natural language queries like "What should I eat for lunch in South India under 500 kcal?"
-- 📊 **Comprehensive Nutrition Data** — Calories, macros (protein, carbs, fat), and micronutrients
-- 🎯 **Goal-Based Planning** — Weight loss, maintenance, or muscle gain
-- 🌱 **Dietary Preferences** — Vegan, vegetarian, non-vegetarian options
-- 🏥 **Health Condition Awareness** — Allergy tracking and medical condition considerations
-- 📱 **Modern Web Interface** — Responsive Next.js frontend with TypeScript
-- 🐳 **Docker Support** — Easy deployment with Docker Compose
-- 🔒 **User Authentication** — Secure login and profile management
+- 🍛 **Authentic Indian Regional Cuisines** — Deep contextual coverage of North, South, East, and West Indian culinary profiles, traditional preparations, and regional staples.
+- ⚡ **Ultra-Fast Groq Inference** — Accelerated LLM processing via Groq LPUs (`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`, or custom models) with zero GPU cost on your local machine.
+- 🧠 **Instant Intent Classification (<1 ms)** — Local keyword rule-based routing that bypasses redundant LLM round-trips for maximum responsiveness.
+- 🔍 **Two-Stage Hybrid RAG Pipeline** — Combines dense semantic search (FAISS + `all-MiniLM-L6-v2`) with sparse keyword matching (BM25), fused via Reciprocal Rank Fusion (RRF) and re-ranked using a Cross-Encoder (`ms-marco-MiniLM-L-6-v2`).
+- 📈 **25+ Clinical & Health Metric Computations** — Computes BMI, BMR (Mifflin-St Jeor), Body Fat %, TDEE, Lean Body Mass, Visceral Fat, WHtR, Metabolic Age, macro/micronutrient splits, electrolytes, and hydration targets.
+- 🏥 **Comprehensive Medical & Dietary Profiling** — Tracks allergies, chronic conditions (Diabetes, Hypertension, Thyroid, Cholesterol, Kidney, Liver, IBS, GERD, Gout, PCOS), spice tolerances, and lifestyle factors.
+- 🛡️ **Robust Multi-Tier Caching** — Bounded in-memory FIFO query embedding cache, session-level profile cache, email-level health metrics cache, and frontend TTL cache (5 min).
+- 🔒 **Secure Authentication & Session Handling** — HttpOnly cookie sessions, bcrypt password hashing, brute-force rate limiting (5 attempts / 5 mins), and direct SQL connection pooling with `asyncpg`.
+- 💻 **Next.js 16 App Router UI** — Modern, accessible interface built with TypeScript, modular forms, live chat history, toast notifications, and customizable health profiles.
+- 🐳 **Full Containerization** — Complete multi-service orchestration with Docker & Docker Compose, plus a one-click Windows launcher (`start-servers.bat`).
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture & System Design
 
 ### Tech Stack
 
 #### Backend
-- **FastAPI** — High-performance async Python web framework
-- **LangGraph** — Workflow orchestration for AI pipelines with deterministic intent-based routing
-- **LangChain** — LLM application framework (Document, VectorStore, Embeddings)
-- **FAISS** — Dense vector similarity search for RAG pipeline
-- **BM25 (rank-bm25)** — Sparse keyword retrieval for hybrid search
-- **Sentence Transformers** — Text embeddings (`all-MiniLM-L6-v2`) + Cross-Encoder re-ranking (`ms-marco-MiniLM-L-6-v2`)
-- **Reciprocal Rank Fusion (RRF)** — Combines BM25 + FAISS retrieval scores
-- **PostgreSQL 17** — Relational storage for users, profiles, sessions
-- **asyncpg** — Async PostgreSQL adapter with **connection pooling** (`min_size=2, max_size=10`), direct SQL (no ORM)
-- **Pydantic** — Request/response data validation
-- **bcrypt** — Password hashing for authentication
-- **NVIDIA NIM API** — LLM inference endpoint (`google/gemma-4-31b-it`)
+- **Framework**: FastAPI (ASGI with Uvicorn)
+- **AI Orchestration**: LangGraph (StateGraph workflows, deterministic routing)
+- **LLM Inference**: Groq API (`qwen/qwen3.8-27b` default, async non-blocking HTTP via `httpx`)
+- **Dense Vector Search**: FAISS (`faiss-cpu`) with `sentence-transformers` (`all-MiniLM-L6-v2`)
+- **Sparse Keyword Search**: BM25 (`rank-bm25`) with pre-tokenized corpus
+- **Ranking & Fusion**: Reciprocal Rank Fusion (RRF, $k=60$) + Cross-Encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) running in worker threads
+- **Database & Pooling**: PostgreSQL 17 via `asyncpg.Pool` (`min_size=2, max_size=10`)
+- **Security & Validation**: Pydantic v2, bcrypt password hashing, sliding-window rate limiting
 
 #### Frontend
-- **Next.js 16** — React framework with App Router
-- **React 18** — Modern UI library
-- **TypeScript 5.0+** — Type-safe JavaScript
-- **CSS Modules** — Scoped component-level styles
+- **Framework**: Next.js 16.1 (App Router)
+- **Library**: React 18
+- **Language**: TypeScript 5.0+
+- **Styling**: CSS Modules with modern design system and responsive layouts
+- **State Management**: React Context (`AuthContext`, `ToastContext`), Custom Hook (`useModalForm`)
+- **Client Cache**: In-memory TTL API cache (`apiCache.ts`, 5-minute TTL)
 
-#### Infrastructure
-- **Docker & Docker Compose** — Multi-container orchestration (3 services)
-- **PostgreSQL 17** — Containerized database with persistent volume
-- **Uvicorn** — ASGI server for FastAPI
-- **NVIDIA API Endpoints** — Cloud LLM inference
+#### Infrastructure & Tools
+- **Containerization**: Docker, Docker Compose (3 interconnected services: `frontend`, `fastapi`, `postgres-db`)
+- **Diagnostics**: `test_groq_api.py`, `list_groq_models.py`
+- **1-Click Startup**: `start-servers.bat` for Windows environments
 
-### System Design
+---
+
+### System Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -76,20 +78,19 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │  │  └──────────────────┘  └──────────────────┘  └──────────────────────┘   │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────┬───────────────────────────────────────────────────────┘
-                          │ HTTP + Cookies (CORS)
+                          │ HTTP + HttpOnly Cookies (CORS localhost:3000 -> 8000)
                           ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                API LAYER                                       │
+│                                API LAYER (FastAPI)                             │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
 │  │                  FastAPI Application (Uvicorn ASGI)                      │   │
 │  │                                                                         │   │
 │  │  ┌────────────────┐  ┌─────────────────┐  ┌──────────────────────────┐   │   │
 │  │  │  Auth Router   │  │  Chat Router    │  │  User Profile Router    │   │   │
-│  │  │  /register     │  │  /chat/         │  │  /personal-details      │   │   │
-│  │  │  /login        │  │                 │  │  /preferences           │   │   │
-│  │  │  /logout       │  │                 │  │  /health-conditions     │   │   │
-│  │  │  /check-login  │  │                 │  │  GET + POST endpoints   │   │   │
-│  │  │  /update-pass  │  │                 │  │                         │   │   │
+│  │  │  /register/    │  │  /chat/         │  │  /personal-details/     │   │   │
+│  │  │  /login/       │  │  (Background    │  │  /preferences/          │   │   │
+│  │  │  /logout/      │  │   Summary Task) │  │  /health-conditions/     │   │   │
+│  │  │  /check-login/ │  │                 │  │  /update-password/       │   │   │
 │  │  └────────────────┘  └────────┬────────┘  └──────────────────────────┘   │   │
 │  └───────────────────────────────┼──────────────────────────────────────────┘   │
 └──────────────────────────────────┼──────────────────────────────────────────────┘
@@ -99,44 +100,43 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │                         ORCHESTRATION LAYER (LangGraph)                        │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                   Chat Graph (Optimized — 2 LLM calls)                  │   │
+│  │                   Main Chat Graph (Fast Single-Call Path)                │   │
 │  │                                                                         │   │
 │  │  ┌─────────────────────────────────────────────────────────────────┐     │   │
-│  │  │   Fetch Context Node (cached — no DB calls on cache hit)        │     │   │
-│  │  │  ┌──────────────────┐  ┌──────────────────────────────────┐    │     │   │
-│  │  │  │ User Profile     │  │ Health Metrics                    │    │     │   │
-│  │  │  │ (session cache)  │  │ (email cache, sub-graph on miss)  │    │     │   │
-│  │  │  └──────────────────┘  └──────────────────────────────────┘    │     │   │
+│  │  │  fetch_context_node (Multi-Tier In-Memory Cache)                │     │   │
+│  │  │  • User Profile   -> Cached per Session (DB on cache miss)      │     │   │
+│  │  │  • Health Metrics -> Cached per Email (Sub-graph on miss)       │     │   │
 │  │  └────────────────────────────┬────────────────────────────────────┘     │   │
 │  │                               ▼                                         │   │
 │  │  ┌────────────────────────────────────────────────────────────────┐      │   │
-│  │  │    Intent Classification Node (LLM call #1)                   │      │   │
-│  │  │    Classifies: meal_plan | nutrition_query | health_advice |   │      │   │
-│  │  │                 general                                       │      │   │
+│  │  │  classify_intent_node (Local Keyword Rules — <1 ms, NO LLM)    │      │   │
+│  │  │  Routes: meal_plan | nutrition_query | health_advice | general │      │   │
 │  │  └──────────┬───────────┬───────────────┬────────────────┬───────┘      │   │
 │  │             │           │               │                │              │   │
-│  │             ▼           └───────┬───────┘                ▼              │   │
-│  │  ┌──────────────┐              ▼                  ┌─────────────┐      │   │
-│  │  │  Meal Plan   │  ┌──────────────────────────┐   │   General   │      │   │
-│  │  │  Handler     │  │  Hybrid Search Node      │   │   Handler   │      │   │
-│  │  │ (own hybrid  │  │  (deterministic — always  │   │ (no food    │      │   │
-│  │  │  search,     │  │   runs for nutrition/     │   │  lookup)    │      │   │
-│  │  │  k=10)       │  │   health intents)         │   │             │      │   │
-│  │  └──────┬───────┘  └──────┬───────────┬───────┘   └──────┬──────┘      │   │
-│  │         │                 ▼           ▼                   │             │   │
-│  │         │          ┌────────────┐ ┌──────────────┐        │             │   │
-│  │         │          │ Nutrition  │ │   Health     │        │             │   │
-│  │         │          │  Query     │ │   Advice     │        │             │   │
-│  │         │          │  Handler   │ │   Handler    │        │             │   │
-│  │         │          └─────┬──────┘ └──────┬───────┘        │             │   │
-│  │         └────────────────┴───────────────┴────────────────┘             │   │
-│  │                                    │  (LLM call #2)                     │   │
-│  │                                    ▼                                    │   │
-│  │                              ┌──────────┐                               │   │
-│  │                              │   END    │                               │   │
-│  │                              └──────────┘                               │   │
+│  │             ▼           ▼               ▼                ▼              │   │
+│  │  ┌──────────────────────────────────────────────┐ ┌─────────────┐      │   │
+│  │  │  search_food_node (Hybrid Search Pipeline)   │ │   General   │      │   │
+│  │  │  • FAISS Dense (k=10) + BM25 Sparse (k=10)   │ │   Handler   │      │   │
+│  │  │  • Reciprocal Rank Fusion (RRF, k=60)        │ │ (no search) │      │   │
+│  │  │  • Cross-Encoder Re-ranker (thread executor) │ │             │      │   │
+│  │  └──────┬───────────────────────┬───────────────┘ └──────┬──────┘      │   │
+│  │         │                       │                        │             │   │
+│  │         ▼                       ▼                        │             │   │
+│  │  ┌──────────────┐        ┌──────────────┐                │             │   │
+│  │  │  Meal Plan   │        │  Nutrition / │                │             │   │
+│  │  │  Handler     │        │  Health Node │                │             │   │
+│  │  └──────┬───────┘        └──────┬───────┘                │             │   │
+│  │         │                       │                        │             │   │
+│  │         └───────────────────────┴────────────────────────┘             │   │
+│  │                                 │ (Only 1 LLM Call via Groq API)       │   │
+│  │                                 ▼                                      │   │
+│  │                           ┌──────────┐                                 │   │
+│  │                           │   END    │  --> Immediate response to user │   │
+│  │                           └──────────┘                                 │   │
 │  │                                                                         │   │
-│  │         Summary runs as FastAPI BackgroundTask (not in graph)           │   │
+│  │  ┌───────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ BackgroundTasks: update_summary (Async non-blocking summarizer)   │  │   │
+│  │  └───────────────────────────────────────────────────────────────────┘  │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
@@ -144,7 +144,7 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │  │  fetch_user_data → compute_base_metrics (Age, BMI, BMR, BFP) →          │   │
 │  │  compute_derived_metrics (TDEE, LBM, Muscle Mass, WHtR, etc.) →         │   │
 │  │  compute_nutrition_metrics (Macros, Protein, Fiber, Electrolytes) →      │   │
-│  │  finalize_metrics (format for LLM context)                              │   │
+│  │  finalize_metrics (Formats structured context for LLM prompt)           │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
 └────────────────────────────────┬──────────────────────┬──────────────────────────┘
                                  │                      │
@@ -154,36 +154,36 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 │       DATA / RAG LAYER         │         │              LLM LAYER                │
 │                                │         │                                       │
 │  ┌──────────────────────────┐  │         │  ┌────────────────────────────────┐   │
-│  │  Hybrid Retrieval Engine │  │         │  │     NVIDIA NIM API Service     │   │
+│  │  Hybrid Retrieval Engine │  │         │  │       Groq API Service         │   │
 │  │  ┌────────────────────┐  │  │         │  │  ┌──────────────────────────┐  │   │
-│  │  │ FAISS Dense Search │  │  │         │  │  │  Model: google/gemma-4-  │  │   │
-│  │  │ + BM25 Sparse      │  │  │         │  │  │         31b-it           │  │   │
-│  │  │ → RRF Fusion       │  │  │         │  │  │                          │  │   │
-│  │  │ → Cross-Encoder    │  │  │         │  │  │                          │  │   │
-│  │  │   Re-ranker        │  │  │         │  │  └──────────────────────────┘  │   │
+│  │  │ FAISS Dense Index  │  │  │         │  │  │  Default:                │  │   │
+│  │  │ + BM25 Sparse      │  │  │         │  │  │  qwen/qwen3.8-27b        │  │   │
+│  │  │ → RRF Fusion       │  │  │         │  │  │  (configurable via       │  │   │
+│  │  │ → Cross-Encoder    │  │  │         │  │  │   GROQ_MODEL in .env)    │  │   │
+│  │  │   Re-ranking       │  │  │         │  │  └──────────────────────────┘  │   │
 │  │  └────────────────────┘  │  │         │  └────────────────────────────────┘   │
 │  │  Files:                  │  │         │                                       │
-│  │   index.faiss            │  │         │  Used for: Intent Classification,     │
-│  │   bm25_corpus.json       │  │         │  Nutrition Queries, Health Advice     │
-│  └──────────────────────────┘  │         └───────────────────────────────────────┘
-│                                │
-│  ┌──────────────────────────┐  │         ┌───────────────────────────────────────┐
-│  │    PostgreSQL 17         │  │         │          CACHING LAYER                │ 
-│  │  ┌────────────────────┐  │  │         │                                       │
-│  │  │  credentials       │  │  │         │  ┌────────────────────────────────┐   │
-│  │  │  personal_details  │  │  │         │  │  Backend (In-Memory Dicts)     │   │
-│  │  │  preferences       │  │  │         │  │  • user_profile_cache(by sess) │   │
-│  │  │  health_conditions │  │  │         │  │  • health_metrics_cache(email) │   │
+│  │   app/food_dataset/      │  │         │  Used for: Response generation and    │
+│  │   • index.faiss          │  │         │  conversation summarization           │
+│  │   • bm25_corpus.json     │  │         └───────────────────────────────────────┘
+│  │   • metadata.json        │  │
+│  │   • index.json           │  │         ┌───────────────────────────────────────┐
+│  └──────────────────────────┘  │         │          CACHING TIERS                │
+│                                │         │                                       │
+│  ┌──────────────────────────┐  │         │  ┌────────────────────────────────┐   │
+│  │    PostgreSQL 17         │  │         │  │  Embedding Cache (_EMBEDDING)  │   │
+│  │  ┌────────────────────┐  │  │         │  │  • FIFO cache (max 256 items)  │   │
+│  │  │  credentials       │  │  │         │  ├────────────────────────────────┤   │
+│  │  │  personal_details  │  │  │         │  │  Backend In-Memory Dicts       │   │
+│  │  │  preferences       │  │  │         │  │  • user_profile_cache (session)│   │
+│  │  │  health_conditions │  │  │         │  │  • health_metrics_cache (email)│   │
 │  │  │  sessions          │  │  │         │  │  • conversation_summaries      │   │
-│  │  │  (connection pool)  │  │  │         │  ├────────────────────────────────┤   │
-│  │  └────────────────────┘  │  │         │  │  Frontend (ApiCache + TTL)     │   │
-│  │                           │  │         │  │  • auth_status, profile,       │   │
-│  │                           │  │         │  │    preferences, health (5min)  │   │
-│  │                           │  │         │  └────────────────────────────────┘   │
-│  └──────────────────────────┘  │         └───────────────────────────────────────┘
-│                                │
-│  ┌──────────────────────────┐  │
-│  │  Food Datasets (Source)  │  │
+│  │  │  (asyncpg pool)    │  │  │         │  ├────────────────────────────────┤   │
+│  │  └────────────────────┘  │  │         │  │  Frontend API Cache (TTL 5 min)│   │
+│  └──────────────────────────┘  │         │  │  • profile, prefs, health data │   │
+│                                │         │  └────────────────────────────────┘   │
+│  ┌──────────────────────────┐  │         └───────────────────────────────────────┘
+│  │  Curated Food Datasets   │  │
 │  │  • food_dataset.csv      │  │
 │  │  • food_dataset.json     │  │
 │  │  • Anuvaad.xlsx          │  │
@@ -191,130 +191,84 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 └────────────────────────────────┘
 ```
 
-**Chat Pipeline Flow (Optimized — 2 LLM calls per message):**
-1. User message arrives at `/chat/` endpoint → session validated via cookie
-2. **Context Fetch (Cached)** — User profile (cached per session) and health metrics (cached per email) loaded from in-memory cache; only queries DB on cache miss
-3. **Intent Classification (LLM call #1)** — LLM classifies intent into `meal_plan`, `nutrition_query`, `health_advice`, or `general`
-4. **Deterministic Routing** — Intent-based routing with no additional LLM call:
-   - `nutrition_query` / `health_advice` → **Hybrid Search** (BM25 + FAISS → RRF → Cross-Encoder re-ranking, top 5) → Handler
-   - `meal_plan` → Handler (runs its own hybrid search internally, top 10)
-   - `general` → Handler directly (no food lookup)
-5. **Handler Execution (LLM call #2)** — Generates response using user context + health metrics + (optional) food data
-6. **Background Summary** — Conversation summary updated asynchronously via FastAPI `BackgroundTasks` (not in the critical path)
-7. Response returned to frontend immediately
-
-**Hybrid Retrieval Pipeline (Two-Stage):**
-- **Stage 1 — Fetch:** BM25 sparse search (k=20) + FAISS dense search (k=20) → fused via **Reciprocal Rank Fusion (RRF)**
-- **Stage 2 — Re-rank:** Top 20 candidates re-ranked by a **Cross-Encoder** (`ms-marco-MiniLM-L-6-v2`) → final top 5 results with metadata
-
-**Health Metrics Pipeline (25+ Calculations):**
-- Base: Age, BMI, BMR (Mifflin-St Jeor), Body Fat %
-- Derived: TDEE, Lean Body Mass, Muscle Mass, Visceral Fat, WHtR, Metabolic Age
-- Nutrition: Macronutrient breakdown, Protein intake, Micronutrients, Electrolytes, Fiber
-- Assessment: BMD, Max Heart Rate, Hydration Level, Sleep Score, Skeletal Muscle Mass
-
 ---
 
 ## 📁 Project Structure
 
 ```plaintext
 .
-├── app/                              # FastAPI Backend
-│   ├── routers/                      # API route handlers
-│   │   ├── auth.py                   # Authentication (register, login, logout, sessions)
-│   │   ├── chat.py                   # Chat endpoint (POST /chat/)
-│   │   └── user_profile.py           # Profile CRUD (personal, preferences, health)
-│   ├── services/                     # Business logic & AI services
-│   │   ├── graphs/                   # LangGraph pipeline definitions
-│   │   │   ├── chat_graph.py         # Main chat graph (deterministic intent-based routing, 2 LLM calls)
+├── app/                                 # FastAPI Backend Application
+│   ├── food_dataset/                    # Pre-indexed search data
+│   │   ├── index.faiss                  # FAISS dense vector index
+│   │   ├── index.json                   # Food description documents
+│   │   ├── metadata.json                # Nutritional metadata for items
+│   │   └── bm25_corpus.json             # Pre-tokenized BM25 search corpus
+│   ├── routers/                         # FastAPI route definitions
+│   │   ├── auth.py                      # Authentication & rate-limited session management
+│   │   ├── chat.py                      # Chat endpoint with BackgroundTasks summary
+│   │   └── user_profile.py              # Profile, preferences, and health conditions CRUD
+│   ├── services/                        # Core AI & retrieval logic
+│   │   ├── graphs/                      # LangGraph workflow pipelines
+│   │   │   ├── chat_graph.py            # Primary chat orchestration graph
 │   │   │   ├── health_metrics_graph.py  # Health metrics computation graph
-│   │   │   └── meal_planning_graph.py   # Meal plan generation graph (hybrid search)
-│   │   ├── nodes/                    # LangGraph node implementations
-│   │   │   ├── intent_nodes.py       # Intent classification & deterministic routing
-│   │   │   ├── retrieval_nodes.py    # Cached context fetch + food search node
-│   │   │   └── handler_nodes.py      # Response handlers + background summary update
-│   │   ├── faiss_service.py          # FAISS index loading, metadata, & search
-│   │   ├── bm25_service.py           # BM25 sparse retrieval service
-│   │   ├── hybrid_retriever.py       # Hybrid search (BM25+FAISS → RRF → Cross-Encoder)
-│   │   ├── tools.py                  # Food database search tool
-│   │   ├── nvidia_api_service.py     # NVIDIA NIM API integration (async via thread)
-│   │   └── cache.py                  # Multi-layer caching (profile, health metrics, summaries)
-│   ├── food_dataset/                 # Pre-built search indexes
-│   │   ├── index.faiss               # FAISS dense vector index
-│   │   ├── index.json                # Food text data for docstore
-│   │   ├── metadata.json             # Structured metadata per food item
-│   │   └── bm25_corpus.json          # Tokenized corpus for BM25 sparse search
-│   ├── main.py                       # FastAPI app entry point + CORS + startup initialization
-│   ├── models.py                     # Pydantic request/response models
-│   ├── db_connect.py                 # PostgreSQL connection pooling (asyncpg.Pool) + table creation
-│   ├── health_metrics.py             # 25+ health metric calculators
-│   ├── requirements.txt              # Python dependencies
-│   ├── dockerfile                    # Backend Docker image
-│   └── .dockerignore                 # Docker build exclusions
+│   │   │   └── meal_planning_graph.py   # Dedicated meal plan generator graph
+│   │   ├── nodes/                       # Graph nodes
+│   │   │   ├── handler_nodes.py         # LLM response generation & summary nodes
+│   │   │   ├── intent_nodes.py          # Fast local rule-based intent routing (<1 ms)
+│   │   │   └── retrieval_nodes.py       # Context fetch and async hybrid food retrieval
+│   │   ├── bm25_service.py              # BM25 sparse indexer & retriever
+│   │   ├── cache.py                     # Profile and health metrics cache store
+│   │   ├── faiss_service.py             # FAISS index loader & FIFO query embedding cache
+│   │   ├── groq_api_service.py          # Groq API client with async httpx
+│   │   ├── hybrid_retriever.py          # RRF fusion + non-blocking Cross-Encoder reranker
+│   │   └── tools.py                     # LangChain-compatible food search tool
+│   ├── db_connect.py                    # PostgreSQL schema init & asyncpg connection pool
+│   ├── health_metrics.py                # 25+ clinical formulas and nutritional equations
+│   ├── main.py                          # FastAPI ASGI entrypoint, CORS & startup lifespans
+│   ├── models.py                        # Pydantic data validation schemas
+│   ├── requirements.txt                 # Backend Python dependencies
+│   ├── dockerfile                       # Backend container definition
+│   └── .dockerignore                    # Docker build ignores
 │
-├── frontend/                         # Next.js 16 Frontend
+├── frontend/                            # Next.js 16 Frontend Application
 │   ├── src/
-│   │   ├── app/                      # Next.js App Router
-│   │   │   ├── layout.tsx            # Root layout
-│   │   │   └── page.tsx              # Main page (chat interface)
-│   │   ├── components/               # React components
-│   │   │   ├── chat/                 # Chat UI components
-│   │   │   │   ├── ChatContainer.tsx # Chat window with message history
-│   │   │   │   ├── ChatForm.tsx      # Message input form
-│   │   │   │   └── ChatMessage.tsx   # Individual message bubble
-│   │   │   ├── layout/               # Layout components
-│   │   │   │   ├── Header.tsx        # App header with navigation
-│   │   │   │   └── Sidebar.tsx       # Side navigation panel
-│   │   │   ├── modals/               # Modal dialogs
-│   │   │   │   ├── AuthModal.tsx     # Login/Register modal
-│   │   │   │   ├── PersonalDetailsModal.tsx
-│   │   │   │   ├── PreferencesModal.tsx
-│   │   │   │   ├── HealthConditionsModal.tsx
-│   │   │   │   └── AccountSettingsModal.tsx
-│   │   │   └── ui/                   # Shared UI primitives
-│   │   │       ├── Modal.tsx         # Base modal component
-│   │   │       ├── FormComponents.tsx # Reusable form elements
-│   │   │       └── Toast.tsx         # Toast notifications
-│   │   ├── contexts/                 # React Contexts
-│   │   │   ├── AuthContext.tsx       # Authentication state management
-│   │   │   └── ToastContext.tsx      # Toast notification state
-│   │   ├── hooks/                    # Custom React hooks
-│   │   │   └── useModalForm.ts       # Form state management for modals
-│   │   ├── lib/                      # Shared utilities & API layer
-│   │   │   ├── api.ts               # Centralized API client with caching integration
-│   │   │   ├── apiCache.ts          # TTL-based API response cache (5-min default)
-│   │   │   ├── types.ts             # TypeScript interfaces for all API types
-│   │   │   ├── formConstants.ts     # Form option constants (food, health, lifestyle)
-│   │   │   └── utils.ts             # Validation utilities (email, password, cn)
-│   │   └── styles/                   # CSS Modules
-│   │       ├── globals.css           # Global styles
-│   │       └── components/           # Component-scoped styles
-│   │           ├── Chat.module.css
-│   │           ├── Header.module.css
-│   │           ├── MainPage.module.css
-│   │           ├── Modal.module.css
-│   │           ├── Sidebar.module.css
-│   │           └── Toast.module.css
-│   ├── package.json                  # Node.js dependencies
-│   ├── tsconfig.json                 # TypeScript configuration
-│   ├── next.config.mjs               # Next.js configuration
-│   ├── dockerfile                    # Frontend Docker image
-│   └── .dockerignore                 # Docker build exclusions
+│   │   ├── app/                         # App Router root pages and layouts
+│   │   │   ├── layout.tsx               # Root application layout
+│   │   │   └── page.tsx                 # Main application view with chat & modals
+│   │   ├── components/                  # React modular components
+│   │   │   ├── chat/                    # Chat interface (ChatContainer, ChatForm, ChatMessage)
+│   │   │   ├── layout/                  # Navigation components (Header, Sidebar)
+│   │   │   ├── modals/                  # Profile modals (PersonalDetails, Preferences, Health, Auth, Settings)
+│   │   │   └── ui/                      # Base UI elements (Modal, Toast, FormComponents)
+│   │   ├── contexts/                    # State contexts (AuthContext, ToastContext)
+│   │   ├── hooks/                       # Custom hooks (useModalForm)
+│   │   ├── lib/                         # Shared utilities, API client & TTL cache
+│   │   │   ├── api.ts                   # Centralized API fetcher with cookie support
+│   │   │   ├── apiCache.ts              # TTL-based client cache (5-minute expiry)
+│   │   │   ├── formConstants.ts         # Options for diet, cuisine, and health forms
+│   │   │   ├── types.ts                 # Full TypeScript interfaces
+│   │   │   └── utils.ts                 # Form validation & helpers
+│   │   └── styles/                      # CSS Modules for all components
+│   ├── package.json                     # Frontend dependencies & scripts
+│   ├── tsconfig.json                    # TypeScript configuration
+│   ├── next.config.mjs                  # Next.js build configuration
+│   ├── dockerfile                       # Multi-stage production frontend Docker image
+│   └── .dockerignore                    # Frontend Docker build ignores
 │
-├── faiss_RAG.py                      # Index builder: FAISS + metadata + BM25 corpus
-├── food_dataset.csv                  # Curated Indian food nutrition data
-├── food_dataset.json                 # JSON format food data (3.4MB)
-├── Food_dataset_Anuvaad.xlsx         # Regional dataset with translations
-├── food_dataset.py                   # Dataset conversion utility
-├── usda-food.py                      # USDA food data fetcher
-├── test_nvidia_api.py                # NVIDIA API connection test
-├── docker-compose.yml                # Multi-container orchestration (3 services)
-├── start-servers.bat                 # Quick start script (Windows)
-├── API_CONNECTION_SETUP.md           # API setup guide
-├── DOCKER_GUIDE.md                   # Docker deployment guide
-├── .env                              # Environment variables
-├── .gitignore                        # Git ignore rules
-└── README.md                         # This file
+├── faiss_RAG.py                         # Offline index builder for FAISS + BM25 + metadata
+├── food_dataset.csv                     # Raw Indian nutritional dataset (CSV)
+├── food_dataset.json                    # Raw Indian nutritional dataset (JSON)
+├── Food_dataset_Anuvaad.xlsx            # Multilingual regional food dataset
+├── food_dataset.py                      # Dataset conversion script
+├── usda-food.py                         # USDA nutritional data ingestion utility
+├── list_groq_models.py                  # Utility to list active models on your Groq account
+├── test_groq_api.py                     # Smoke test for Groq API connectivity
+├── start-servers.bat                    # One-click Windows startup script
+├── docker-compose.yml                   # 3-tier container orchestration configuration
+├── API_CONNECTION_SETUP.md              # Frontend-backend networking guide
+├── DOCKER_GUIDE.md                      # Detailed Docker deployment guide
+├── .env                                 # Environment variables (DB credentials, API keys)
+└── README.md                            # Project documentation
 ```
 
 ---
@@ -323,277 +277,236 @@ A conversational AI nutrition assistant specializing in Indian diets. Built with
 
 ### Prerequisites
 
-- **Python 3.12**
-- **Node.js 22+** and npm
-- **PostgreSQL 17** (or Docker for containerized deployment)
+- **Python 3.12+**
+- **Node.js 22+** and **npm**
+- **PostgreSQL 17** (or run containerized via Docker)
+- **Groq API Key** (Get one free at [console.groq.com](https://console.groq.com/))
 - **Git**
-- **.env file** with database and API credentials (see Configuration section)
 
-For **Docker deployment**: Only need **Docker** and **Docker Compose**
+---
 
-### Quick Start with Docker
+### Option 1: 1-Click Startup (Windows)
+
+If you are running Windows and have local Python, Node.js, and PostgreSQL configured:
+
+```bat
+start-servers.bat
+```
+
+This launches the FastAPI backend on port `8000` and the Next.js frontend on port `3000` in separate terminal windows.
+
+---
+
+### Option 2: Docker Compose (Recommended for Containerized Environments)
+
+Ensure Docker Desktop is running, then run:
 
 ```bash
 # Clone the repository
 git clone https://github.com/theankitdash/AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets.git
 cd AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets
 
-# Create .env file with database credentials
-cp .env.example .env  # (or create manually with required variables)
-
-# Start all services with Docker Compose
+# Build and start all 3 services
 docker-compose up --build
 ```
 
-Services will be available at:
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
-- **Database**: localhost:5432
+**Services will be live at:**
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **PostgreSQL**: `localhost:5432`
 
-### Manual Setup (Without Docker)
+---
 
-#### Prerequisites
-- Python 3.12+
-- PostgreSQL 17 (must be running before starting backend)
-- Node.js 22+
+### Option 3: Manual Step-by-Step Setup
 
-#### 1. Backend Setup
+#### 1. Database Setup
+Ensure PostgreSQL 17 is running. Create your database:
+
+```sql
+CREATE DATABASE nutrify_health;
+```
+
+#### 2. Configure Environment Variables
+Create a `.env` file in the root directory (see [Configuration](#%EF%B8%8F-configuration)):
+
+```env
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=qwen/qwen3.8-27b
+DB_USER=postgres
+DB_PASSWORD=your_postgres_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=nutrify_health
+API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+#### 3. Backend Setup
 
 ```bash
-# Navigate to project root
-cd AI-Nutritional-Health-Assistant-Personalized-Guidance-for-Indian-Diets
+# Activate your Python virtual environment
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+# source .venv/bin/activate
 
-# Install Python dependencies
+# Install dependencies
 pip install -r app/requirements.txt
 
-# Create and configure .env file (see Configuration section below)
+# (Optional) Verify your Groq connection & model access
+python test_groq_api.py
 
-# Start FastAPI server
+# Start the FastAPI server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-✅ Backend running at: **http://localhost:8000**  
-📚 API Documentation: **http://localhost:8000/docs**
+#### 4. Frontend Setup
 
-#### 2. Frontend Setup (in new terminal)
+In a separate terminal:
 
 ```bash
-# Navigate to frontend directory
 cd frontend
 
-# Install Node.js dependencies
+# Install Node dependencies
 npm install
 
 # Start Next.js development server
 npm run dev
 ```
 
-✅ Frontend running at: **http://localhost:3000**
-
-#### 3. Database Setup
-
-PostgreSQL must be running before starting the backend:
-
-```bash
-# On Windows (if PostgreSQL installed locally):
-# PostgreSQL service should auto-start or start from Services
-
-# On macOS/Linux:
-brew services start postgresql
-# or
-sudo systemctl start postgresql
-
-# Create database (optional, can be auto-created):
-createdb nutrify_db
-```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
 ## ⚙️ Configuration
 
-### Environment Variables
-
 Create a `.env` file in the project root with the following variables:
 
 ```env
-# Database Configuration
-DB_NAME=nutrify_db
+# ========================
+# LLM Inference (Groq)
+# ========================
+GROQ_API_KEY=gsk_your_groq_api_key
+GROQ_MODEL=qwen/qwen3.8-27b
+# Alternative models: openai/gpt-oss-120b, openai/gpt-oss-20b, llama-3.3-70b-versatile
+
+# ========================
+# Database (PostgreSQL 17)
+# ========================
 DB_USER=postgres
-DB_PASSWORD=your_secure_password
-DB_HOST=localhost          # Use 'postgres-db' for Docker
+DB_PASSWORD=your_password
+DB_HOST=localhost            # Use 'postgres-db' when running in Docker
 DB_PORT=5432
+DB_NAME=nutrify_health
 
-# API Configuration
+# ========================
+# Application Networking
+# ========================
 API_BASE_URL=http://localhost:8000
-NEXT_PUBLIC_API_URL=http://localhost:8000  # For Docker: http://fastapi:8000
-
-# LLM Configuration (Optional - for NVIDIA API integration)
-NVIDIA_API_KEY=your_nvidia_api_key
+NEXT_PUBLIC_API_URL=http://localhost:8000    # Docker: http://fastapi:8000
 ```
 
-### Docker Environment
+### Checking Available Groq Models
 
-When using Docker Compose, update the `.env` file to use Docker service names:
+To see all available models supported on your Groq key:
 
-```env
-# For Docker services, use service names instead of localhost
-DB_HOST=postgres-db
-NEXT_PUBLIC_API_URL=http://fastapi:8000
+```bash
+python list_groq_models.py
 ```
-
-## 🌐 Using the Application
-
-### 1. **Access the Application**
-Navigate to `http://localhost:3000` in your browser
-
-### 2. **Register/Login**
-- Create a new account with email and password
-- Or login with existing credentials
-- Password is securely hashed with bcrypt
-
-### 3. **Complete Your Profile**
-
-Set up three key sections after logging in:
-
-#### Personal Details
-- Age/Date of Birth, gender, height, weight
-- Waist circumference
-- Activity level (sedentary, moderate, active)
-
-#### Dietary Preferences  
-- Diet type (vegan, vegetarian, non-vegetarian)
-- Regional cuisines (North, South, East, West Indian)
-- Preferred meal types and ingredients
-- Snack and sweet preferences
-- Spice tolerance
-- Caffeine intake
-- Hydration level
-- Meal frequency and eating out frequency
-
-#### Health Conditions
-- Food allergies and restrictions
-- Medical conditions (diabetes, hypertension, etc.)
-- Sleep quality and duration
-- Supplement usage
-- Fitness goals (weight loss, maintenance, muscle gain)
-
-### 4. **Start Chatting!**
-
-Ask the AI assistant questions like:
-- *"What should I eat for lunch in South India under 500 kcal?"*
-- *"Give me a high-protein vegetarian dinner option"*
-- *"I need a meal plan for weight loss with North Indian food"*
-- *"What's a healthy breakfast option with less than 300 calories?"*
-- *"Suggest meals for someone with dairy allergies"*
-- *"I'm diabetic, what are safe Indian meal options?"*
-
-The assistant will provide personalized recommendations based on:
-- Your dietary preferences
-- Health conditions and allergies
-- Fitness goals
-- Regional cuisine preferences
-- Nutritional requirements
 
 ---
 
-## 📊 Dataset Information
+## 🧠 Retrieval & Orchestration Deep Dive
 
-The application uses curated Indian food nutrition datasets:
+### 1. Ultra-Low Latency Pipeline
+- **Local Intent Classification**: Unlike traditional RAG pipelines that consume an extra LLM call for intent detection, this system utilizes high-efficiency keyword classification in `classify_intent_node`. It identifies queries as `meal_plan`, `nutrition_query`, `health_advice`, or `general` in **< 1 ms**.
+- **Single Critical-Path LLM Call**: The user only waits for a single LLM response call.
+- **Fire-and-Forget Conversation Summaries**: Summaries are updated out-of-band via FastAPI's `BackgroundTasks`, eliminating 2–5 seconds of blocking latency.
 
-**Data Files**:
-- `food_dataset.csv` — Primary nutrition database with Indian foods
-- `food_dataset.json` — JSON format of food data
-- `Food_dataset_Anuvaad.xlsx` — Extended regional cuisine data with translations
+### 2. Two-Stage Hybrid Retrieval
+1. **Stage 1 (Sparse + Dense Retrieval)**:
+   - **BM25**: Tokenized lexical search ($k=10$) for exact dish names, ingredients, and regional terms.
+   - **FAISS**: Dense semantic vector similarity ($k=10$) using `all-MiniLM-L6-v2` embeddings.
+   - **Query Cache**: An in-memory bounded FIFO cache ($N=256$) ensures repeated questions bypass vector re-encoding.
+2. **Reciprocal Rank Fusion (RRF)**:
+   $$RRF\_Score(d) = \sum_{m \in \{FAISS, BM25\}} \frac{1}{60 + rank_m(d)}$$
+3. **Stage 2 (Non-Blocking Cross-Encoder Re-Ranking)**:
+   - Top candidates are re-scored using `cross-encoder/ms-marco-MiniLM-L-6-v2`.
+   - Execution is offloaded to a background thread pool (`asyncio.to_thread` / `run_in_executor`) to prevent blocking the async event loop, returning the top 5 most relevant items.
 
-**Data Attributes**:
-- Food name and aliases
-- Calories and macronutrients (protein, carbohydrates, fat)
-- Micronutrients (vitamins, minerals)
-- Regional origin and cuisine type
-- Common preparation methods
-
-**Data Sources**: 
-- USDA FoodData Central
-- Indian Food Composition Tables (IFCT)
-- Regional Indian nutrition studies
-
-**Hybrid Search Indexing**:
-- Food data is embedded using Sentence Transformers (`all-MiniLM-L6-v2`) for dense FAISS vectors
-- Tokenized text corpus stored for BM25 sparse keyword search
-- Structured metadata (calories, protein, carbs, fat, etc.) extracted per food item
-- Indexes stored in `app/food_dataset/` (`index.faiss`, `index.json`, `metadata.json`, `bm25_corpus.json`)
-- **Two-stage retrieval**: BM25 + FAISS → Reciprocal Rank Fusion → Cross-Encoder re-ranking
-- **Deterministic routing**: Food retrieval is triggered automatically based on classified intent (no extra LLM call)
+### 3. Multi-Tier Caching System
+- **Tier 1 (Client)**: 5-minute TTL cache in the Next.js frontend (`apiCache.ts`) avoiding redundant round-trips for profile and health conditions.
+- **Tier 2 (Session)**: In-memory profile cache keyed by session ID.
+- **Tier 3 (User)**: In-memory health metrics cache keyed by email; invalidated automatically whenever the user updates their profile.
+- **Tier 4 (Vector)**: Embedding cache for query vectors in FAISS service.
 
 ---
 
-## ⚠️ Important Notes & Limitations
+## 📊 Dataset & Search Indexing
+
+The nutritional knowledge base combines curated data from:
+- **Indian Food Composition Tables (IFCT)**
+- **USDA FoodData Central**
+- **Anuvaad Regional Indian Dataset** (multilingual translations and preparation methods)
+
+### Pre-built Indexes
+The pre-processed indexes reside in `app/food_dataset/`:
+- `index.faiss`: FAISS vector index of embeddings
+- `bm25_corpus.json`: Pre-tokenized corpus for sparse retrieval
+- `metadata.json`: Caloric, macronutrient, micronutrient, and regional attributes
+- `index.json`: Full document text store
+
+To rebuild or refresh the index from `food_dataset.csv`:
+```bash
+python faiss_RAG.py
+```
+
+---
+
+## 📡 API Reference
+
+### Authentication (`/app/routers/auth.py`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/register/` | Register new user with password complexity checks |
+| `POST` | `/login/` | Authenticate user, apply rate-limiting, and set `session_id` cookie |
+| `GET` | `/check-login/` | Check active session validity |
+| `POST` | `/logout/` | Invalidate session in DB and clear cookie |
+| `PUT` | `/update-password/` | Update user password |
+
+### User Profile (`/app/routers/user_profile.py`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` / `POST` | `/personal-details/` | Get or update personal details (height, weight, waist, DOB, gender) |
+| `GET` / `POST` | `/preferences/` | Get or update dietary and lifestyle preferences |
+| `GET` / `POST` | `/health-conditions/` | Get or update health conditions (allergies, diabetes, PCOS, etc.) |
+
+### Chat (`/app/routers/chat.py`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/chat/` | Send message to AI assistant; executes RAG graph and triggers background summary |
+
+---
+
+## ⚠️ Medical Disclaimer & Guidance
 
 > [!WARNING]
-> **Medical Disclaimer**: This application is for informational and educational purposes only and is NOT intended as medical or clinical nutrition advice. Always consult licensed healthcare professionals (doctors, registered dietitians) for:
-> - Medical nutrition therapy
-> - Chronic disease management
-> - Severe allergies or food sensitivities
-> - Personalized medical treatment plans
-
-**Known Limitations**:
-- **Data Accuracy**: Nutrition data accuracy depends on dataset quality; preparation methods and ingredient sourcing affect values
-- **Regional Coverage**: Currently focused on major Indian regions (North, South, East, West); some cuisines may have limited data
-- **Allergies**: Always independently verify ingredients if you have severe allergies or food sensitivities
-- **Portion Sizes**: Recommendations are approximate; actual portions depend on individual needs and cooking methods
-- **Individual Variation**: Nutritional needs vary based on metabolism, health conditions, and medications
-- **LLM Limitations**: AI recommendations may occasionally be inaccurate; always verify with nutritional references
-- **GPU Acceleration**: Embeddings are faster with GPU support, but CPU execution is supported for moderate usage
-
-**Best Practices**:
-- Use this tool as a starting point for nutrition planning
-- Cross-reference recommendations with official nutrition databases
-- Keep your profile information updated for better recommendations
-- Consult healthcare professionals for medical conditions
-- Report any inaccurate nutritional data to help improve the system
+> **Medical Disclaimer**: This application is strictly an educational and informational tool. It does **NOT** provide clinical medical diagnoses or prescribed medical nutrition therapy. Always consult a licensed healthcare professional, physician, or certified dietitian for medical conditions, severe allergies, or clinical treatment plans.
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
+Contributions are welcome! Please feel free to open issues or submit pull requests:
 
-### Ways to Contribute
-
-1. **Dataset Improvements**
-   - Add more regional Indian foods
-   - Improve nutrition data accuracy
-   - Add recipe information
-
-2. **Code Contributions**
-   - Bug fixes
-   - New features (see Roadmap)
-   - Performance optimizations
-   - Test coverage
-
-3. **Documentation**
-   - Fix typos or improve clarity
-   - Add examples
-   - Translate to other languages
-
-### Contribution Process
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes with clear, descriptive commits
-4. Add tests if applicable
-5. Update documentation
-6. Submit a Pull Request
-
-Please follow coding standards and include tests for new features.
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m "Add amazing feature"`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
-### Dataset Licenses
-- USDA FoodData Central: Public Domain
-- Indian Food Composition Tables: Check specific source licenses
-
----
-
-Made with ❤️ for healthier Indian diets
+Made with ❤️ for healthier Indian diets.

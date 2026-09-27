@@ -59,8 +59,9 @@ Ensure `.env` file exists in the project root with the following:
 DB_NAME=nutrify_db
 DB_PASSWORD=your_secure_password_here
 
-# API Keys (add your own)
-NVIDIA_API_KEY=your_nvidia_api_key
+# LLM Inference (Groq)
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=qwen/qwen3.8-27b
 # Add other required environment variables
 ```
 
